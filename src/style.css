@@ -1,0 +1,78 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  body {
+    @apply bg-canvas text-primary font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-primary;
+  }
+}
+
+@layer utilities {
+  .text-primary {
+    @apply text-[#F1F5F9];
+  }
+
+  .text-secondary {
+    @apply text-[#94A3B8];
+  }
+
+  .text-muted {
+    @apply text-[#475569];
+  }
+
+  .bg-canvas {
+    @apply bg-[#0F1117];
+  }
+
+  .bg-surface {
+    @apply bg-[#1A1D27];
+  }
+
+  .bg-surface-2 {
+    @apply bg-[#22263A];
+  }
+
+  .border-surface {
+    @apply border-[#2E3348];
+  }
+
+  .success-500 {
+    @apply #22C55E;
+  }
+
+  .warning-500 {
+    @apply #F59E0B;
+  }
+
+  .danger-500 {
+    @apply #EF4444;
+  }
+
+  .info-500 {
+    @apply #06B6D4;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2E3348;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
