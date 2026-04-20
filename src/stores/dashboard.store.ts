@@ -1,18 +1,37 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { DailyKPIs, LowStockAlert } from '../types'
-import { mockKPIs, mockAlerts } from '../mocks/kpis'
+import { ref } from 'vue'
+import { DailyKPIs, StationStatus, StationType } from '../types'
+import { mockKPIs } from '../mocks/kpis'
 
-export const useDashboardStore = defineStore('dashboard', () => {
+interface StationLocal {
+  id: number
+  name: string
+  type: StationType
+  status: StationStatus
+  operatorName: string | null
+  transactionsToday: number
+  ventasToday: number
+  lastActivityAt: string | null
+  ipAddress: string
+  firmwareVersion: string
+}
+
+const INITIAL_STATIONS: StationLocal[] = [
+  { id: 1, name: 'Balanza 1', type: 'balanza', status: 'activa', operatorName: null, transactionsToday: 12, ventasToday: 48000,  lastActivityAt: new Date(Date.now() - 2 * 60000).toISOString(),   ipAddress: '192.168.1.10', firmwareVersion: 'v2.1.3' },
+  { id: 2, name: 'Balanza 2', type: 'balanza', status: 'activa', operatorName: null, transactionsToday: 10, ventasToday: 42000,  lastActivityAt: new Date(Date.now() - 5 * 60000).toISOString(),   ipAddress: '192.168.1.11', firmwareVersion: 'v2.1.3' },
+  { id: 3, name: 'Balanza 3', type: 'balanza', status: 'error',  operatorName: null, transactionsToday: 0,  ventasToday: 0,      lastActivityAt: new Date(Date.now() - 120 * 60000).toISOString(), ipAddress: '192.168.1.12', firmwareVersion: 'v2.1.3' },
+  { id: 4, name: 'Balanza 4', type: 'balanza', status: 'activa', operatorName: null, transactionsToday: 14, ventasToday: 52000,  lastActivityAt: new Date().toISOString(),                          ipAddress: '192.168.1.13', firmwareVersion: 'v2.1.3' },
+  { id: 5, name: 'Caja',      type: 'caja',    status: 'activa', operatorName: null, transactionsToday: 30, ventasToday: 125000, lastActivityAt: new Date().toISOString(),                          ipAddress: '192.168.1.14', firmwareVersion: 'v3.0.1' },
+]
+
+export const useDashboardStore = defineStore(
+  'dashboard',
+  () => {
   // State
   const kpis = ref<DailyKPIs | null>(mockKPIs)
-  const alerts = ref<LowStockAlert[]>(mockAlerts)
   const isLive = ref(true)
   const lastUpdated = ref(new Date())
-
-  // Computed
-  const unreadAlerts = computed(() => alerts.value.filter(a => !a.acknowledged))
-  const criticalAlerts = computed(() => alerts.value.filter(a => a.stockStatus === 'critical'))
+  const stations = ref<StationLocal[]>(INITIAL_STATIONS)
 
   // Actions
   const updateKPIs = (newKPIs: DailyKPIs) => {
@@ -20,37 +39,29 @@ export const useDashboardStore = defineStore('dashboard', () => {
     lastUpdated.value = new Date()
   }
 
-  const addAlert = (alert: LowStockAlert) => {
-    const exists = alerts.value.find(a => a.productId === alert.productId)
-    if (!exists) {
-      alerts.value.push(alert)
-    }
-  }
-
-  const acknowledgeAlert = (productId: string) => {
-    const alert = alerts.value.find(a => a.productId === productId)
-    if (alert) {
-      alert.acknowledged = true
-    }
-  }
-
   const setIsLive = (live: boolean) => {
     isLive.value = live
   }
 
+  const updateStationOperator = (stationId: number, name: string) => {
+    const station = stations.value.find(s => s.id === stationId)
+    if (station) station.operatorName = name.trim() || null
+  }
+
   return {
-    // State
     kpis,
-    alerts,
     isLive,
     lastUpdated,
-    // Computed
-    unreadAlerts,
-    criticalAlerts,
-    // Actions
+    stations,
     updateKPIs,
-    addAlert,
-    acknowledgeAlert,
-    setIsLive
+    setIsLive,
+    updateStationOperator
   }
-})
+  },
+  {
+    persist: {
+      key: 'comerciales-dashboard',
+      paths: ['stations']
+    }
+  }
+)

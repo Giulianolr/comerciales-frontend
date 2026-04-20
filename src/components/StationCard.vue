@@ -17,11 +17,40 @@
       </div>
     </div>
 
-    <!-- Operator -->
+    <!-- Operario -->
     <div class="mb-3 pb-3 border-b border-border">
-      <p v-if="station.operatorName" class="text-xs text-secondary">Operador:</p>
-      <p v-if="station.operatorName" class="text-sm font-medium text-primary">{{ station.operatorName }}</p>
-      <p v-else class="text-xs text-muted italic">Sin operador</p>
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs text-secondary">Operario:</span>
+        <button v-if="!isEditing && !props.readonly"
+          @click="startEdit"
+          title="Editar operario"
+          class="p-0.5 rounded text-muted hover:text-indigo-400 transition-colors">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+      </div>
+      <!-- Input edición -->
+      <div v-if="isEditing" class="flex items-center gap-1">
+        <input
+          ref="inputRef"
+          v-model="localOperatorName"
+          type="text"
+          placeholder="Nombre del operario"
+          maxlength="40"
+          @keydown.enter="confirmEdit"
+          @keydown.escape="cancelEdit"
+          @blur="confirmEdit"
+          class="flex-1 bg-input border border-indigo-500 rounded px-2 py-1 text-xs text-primary
+                 placeholder-[#475569] outline-none min-w-0"
+        />
+      </div>
+      <!-- Visualización -->
+      <p v-else class="text-xs"
+        :class="station.operatorName ? 'text-primary font-medium' : 'text-muted italic'">
+        {{ station.operatorName || 'Sin asignar' }}
+      </p>
     </div>
 
     <!-- Stats -->
@@ -36,12 +65,6 @@
       </div>
     </div>
 
-    <!-- IP & FW -->
-    <div class="space-y-1 mb-3 pb-3 border-b border-border">
-      <p class="text-xs text-muted">IP: {{ station.ipAddress }}</p>
-      <p class="text-xs text-muted">FW: {{ station.firmwareVersion }}</p>
-    </div>
-
     <!-- Last Activity -->
     <div>
       <p class="text-xs text-secondary">Último evento:</p>
@@ -51,14 +74,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { Station } from '../types'
 
 interface Props {
   station: Station
+  readonly?: boolean
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{ 'update:operatorName': [name: string] }>()
+
+// ─── Edición de operario ──────────────────────────────────────────────────────
+const isEditing = ref(false)
+const localOperatorName = ref('')
+const inputRef = ref<HTMLInputElement | null>(null)
+
+function startEdit() {
+  localOperatorName.value = props.station.operatorName ?? ''
+  isEditing.value = true
+  nextTick(() => inputRef.value?.focus())
+}
+
+function confirmEdit() {
+  isEditing.value = false
+  emit('update:operatorName', localOperatorName.value)
+}
+
+function cancelEdit() {
+  isEditing.value = false
+}
 
 const statusLabel = computed(() => {
   const labels: Record<string, string> = {

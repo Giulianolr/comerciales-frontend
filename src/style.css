@@ -2,61 +2,104 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* ─── Theme variables ───────────────────────────────────────────────────────── */
+
+:root {
+  --clr-canvas:    #0F1117;
+  --clr-surface:   #1A1D27;
+  --clr-surface-2: #22263A;
+  --clr-border:    #2E3348;
+  --clr-primary:   #F1F5F9;
+  --clr-secondary: #94A3B8;
+  --clr-muted:     #475569;
+  --clr-input-bg:  #12141C;
+}
+
+html.theme-light {
+  --clr-canvas:    #F1F5F9;
+  --clr-surface:   #FFFFFF;
+  --clr-surface-2: #F8FAFC;
+  --clr-border:    #E2E8F0;
+  --clr-primary:   #0F172A;
+  --clr-secondary: #475569;
+  --clr-muted:     #94A3B8;
+  --clr-input-bg:  #F8FAFC;
+}
+
+/* Override Tailwind plugin utilities con CSS vars para soporte de tema */
+.text-primary   { color: var(--clr-primary)   !important; }
+.text-secondary { color: var(--clr-secondary) !important; }
+.text-muted     { color: var(--clr-muted)     !important; }
+.bg-canvas      { background-color: var(--clr-canvas)    !important; }
+.bg-surface     { background-color: var(--clr-surface)   !important; }
+.bg-surface-2   { background-color: var(--clr-surface-2) !important; }
+.bg-input       { background-color: var(--clr-input-bg)  !important; }
+.border-surface { border-color: var(--clr-border) !important; }
+.border-border  { border-color: var(--clr-border) !important; }
+
+/* Hover variants */
+.hover\:bg-surface:hover   { background-color: var(--clr-surface)   !important; }
+.hover\:bg-surface-2:hover { background-color: var(--clr-surface-2) !important; }
+.hover\:bg-input:hover     { background-color: var(--clr-input-bg)  !important; }
+.hover\:bg-border:hover    { background-color: var(--clr-border)    !important; }
+
+/* Divide */
+.divide-border > :not([hidden]) ~ :not([hidden]) { border-color: var(--clr-border) !important; }
+
+/* Placeholder */
+.placeholder-muted::placeholder { color: var(--clr-muted) !important; }
+
 @layer base {
   body {
-    @apply bg-canvas text-primary font-sans antialiased;
+    background-color: var(--clr-canvas);
+    color: var(--clr-primary);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-primary;
+    color: var(--clr-primary);
+    font-weight: 600;
   }
 }
 
-@layer utilities {
-  .text-primary {
-    @apply text-[#F1F5F9];
-  }
+/* ─── Vista Caja ────────────────────────────────────────────────────────────── */
 
-  .text-secondary {
-    @apply text-[#94A3B8];
-  }
+.tab-active   { border-bottom: 2px solid #6366f1; color: #818cf8; background: var(--clr-surface-2); }
+.tab-inactive { border-bottom: 2px solid transparent; color: var(--clr-secondary); }
+.tab-inactive:hover { color: var(--clr-primary); background: var(--clr-surface-2); }
 
-  .text-muted {
-    @apply text-[#475569];
-  }
+.btn-pay-method { transition: all .15s; }
+.btn-pay-method.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+.btn-pay-method:not(.active) { background: var(--clr-surface-2); color: var(--clr-secondary); border-color: var(--clr-border); }
+.btn-pay-method:not(.active):hover { border-color: #6366f1; color: var(--clr-primary); }
 
-  .bg-canvas {
-    @apply bg-[#0F1117];
-  }
-
-  .bg-surface {
-    @apply bg-[#1A1D27];
-  }
-
-  .bg-surface-2 {
-    @apply bg-[#22263A];
-  }
-
-  .border-surface {
-    @apply border-[#2E3348];
-  }
-
-  .success-500 {
-    @apply #22C55E;
-  }
-
-  .warning-500 {
-    @apply #F59E0B;
-  }
-
-  .danger-500 {
-    @apply #EF4444;
-  }
-
-  .info-500 {
-    @apply #06B6D4;
-  }
+.cash-quick {
+  font-size: .75rem; padding: .25rem .5rem; border-radius: .25rem;
+  background: var(--clr-surface-2); border: 1px solid var(--clr-border); color: var(--clr-secondary);
+  transition: border-color .15s, color .15s;
 }
+.cash-quick:hover { border-color: #6366f1; color: #818cf8; }
+.cash-quick.exact { border-color: rgba(99,102,241,.4); color: #818cf8; }
+
+.blink { animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.slide-up { animation: slideUp .25s ease; }
+@keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+.fade-in { animation: fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.scale-in { animation: scaleIn .2s cubic-bezier(.34,1.56,.64,1); }
+@keyframes scaleIn { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+
+.scanner-pulse { animation: scanPulse 2s infinite; }
+@keyframes scanPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.35)} 50%{box-shadow:0 0 0 7px rgba(99,102,241,0)} }
+
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {

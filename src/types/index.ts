@@ -98,7 +98,7 @@ export interface Station {
 }
 
 // User Types
-export type UserRole = 'gerente' | 'operador' | 'cajero' | 'supervisor'
+export type UserRole = 'gerente' | 'operador' | 'cajero' | 'supervisor' | 'dev'
 
 export interface User {
   id: string
@@ -146,6 +146,45 @@ export interface DailyReport {
   stationSummaries: StationSalesSummary[]
   paymentMethodBreakdown: Record<PaymentMethod, number>
 }
+
+// ─── Vista Caja ───────────────────────────────────────────────────────────────
+
+export type CajaEstado = 'idle' | 'active' | 'cash' | 'processing' | 'success'
+
+export interface ItemVenta {
+  id: number
+  name: string
+  qty: number
+  unit: 'kg' | 'UN'
+  priceUnit: number
+  supplier: string
+}
+
+export interface PreBoleta {
+  id: string
+  balanzaId: number
+  balanzaNombre: string
+  items: ItemVenta[]
+  creadaHace: string
+}
+
+export interface TabVenta {
+  tabId: number
+  preBoleta: PreBoleta
+  mergedWith: string[]   // IDs de pre-boletas absorbidas
+}
+
+export interface BalanzaEnCola {
+  id: number
+  nombre: string
+  total: number
+  itemCount: number
+  creadaHace: string
+  activa: boolean        // true = tiene pre-boleta pendiente
+  advertencia?: boolean  // true = lleva mucho tiempo esperando
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 
 // Auth
 export interface AuthToken {
