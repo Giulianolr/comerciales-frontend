@@ -81,6 +81,8 @@ html.theme-light {
 }
 .cash-quick:hover { border-color: #6366f1; color: #818cf8; }
 .cash-quick.exact { border-color: rgba(99,102,241,.4); color: #818cf8; }
+.cash-quick.cash-quick--minus { border-color: rgba(239,68,68,.4); color: #f87171; }
+.cash-quick.cash-quick--minus:hover { border-color: #ef4444; color: #fca5a5; }
 
 .blink { animation: blink 1.5s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }

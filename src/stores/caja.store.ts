@@ -51,8 +51,11 @@ export const useCajaStore = defineStore('caja', () => {
   const nextTabId    = ref<number>(3)
 
   // Pago
-  const metodoPago     = ref<'efectivo' | 'debito' | 'credito' | 'transferencia'>('debito')
-  const montoRecibido  = ref<number>(25000)
+  const metodoPago           = ref<'efectivo' | 'debito' | 'credito' | 'transferencia'>('debito')
+  const montoRecibido        = ref<number>(0)
+  const pagoMixto            = ref<boolean>(false)
+  const montoMixtoTarjeta    = ref<number>(0)
+  const metodoPagoSecundario = ref<'debito' | 'credito' | 'transferencia' | null>(null)
 
   // Modales
   const showModalScan   = ref<boolean>(false)
@@ -62,6 +65,16 @@ export const useCajaStore = defineStore('caja', () => {
 
   // Offline
   const offline = ref<boolean>(false)
+
+  // Idle — items en curso por balanza (antes de confirmar cobro)
+  const itemsPorBalanza = ref<Record<number, ItemVenta[]>>({
+    1: [...MOCK_ITEMS_TAB1],
+    2: [],
+    3: [...MOCK_ITEMS_MERGE],
+    4: [],
+  })
+  const balanzaSeleccionadaId = ref<number | null>(null)
+  const nextItemId = ref<number>(200)
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -80,6 +93,8 @@ export const useCajaStore = defineStore('caja', () => {
   const iva = computed(() => total.value - neto.value)
 
   const vuelto = computed(() => Math.max(0, montoRecibido.value - total.value))
+
+  const montoMixtoEfectivo = computed(() => Math.max(0, total.value - montoMixtoTarjeta.value))
 
   const esMerged = computed(() =>
     (tabActivo.value?.mergedWith.length ?? 0) > 0
@@ -129,7 +144,7 @@ export const useCajaStore = defineStore('caja', () => {
       tabActivo.value.mergedWith = []
     }
     metodoPago.value  = 'debito'
-    montoRecibido.value = 25000
+    montoRecibido.value = 0
     estado.value = 'idle'
   }
 
@@ -138,6 +153,9 @@ export const useCajaStore = defineStore('caja', () => {
   function setTabActivo(tabId: number) {
     tabActivoId.value = tabId
     estado.value = 'active'
+    pagoMixto.value = false
+    montoMixtoTarjeta.value = 0
+    metodoPagoSecundario.value = null
   }
 
   function cerrarTab(tabId: number) {
@@ -235,12 +253,32 @@ export const useCajaStore = defineStore('caja', () => {
   // ── Acciones — Pago ───────────────────────────────────────────────────────
 
   function setMetodoPago(m: typeof metodoPago.value) {
+    if (m !== metodoPago.value) {
+      pagoMixto.value = false
+      montoMixtoTarjeta.value = 0
+      metodoPagoSecundario.value = null
+    }
     metodoPago.value = m
     if (m === 'efectivo') {
       estado.value = 'cash'
     } else if (estado.value === 'cash') {
       estado.value = 'active'
     }
+  }
+
+  function togglePagoMixto() {
+    pagoMixto.value = !pagoMixto.value
+    montoMixtoTarjeta.value = 0
+    metodoPagoSecundario.value = null
+  }
+
+  function setMontoMixtoTarjeta(v: number) {
+    montoMixtoTarjeta.value = Math.min(Math.max(0, v), total.value)
+  }
+
+  function setMetodoPagoSecundario(m: 'debito' | 'credito' | 'transferencia') {
+    metodoPagoSecundario.value = m
+    montoMixtoTarjeta.value = 0
   }
 
   function setMontoRecibido(v: number) {
@@ -253,33 +291,59 @@ export const useCajaStore = defineStore('caja', () => {
     offline.value = !offline.value
   }
 
-  // ── Acciones — Idle (seleccionar pre-boleta de la cola) ───────────────────
+  // ── Acciones — Idle ───────────────────────────────────────────────────────
 
-  function seleccionarPreBoleta(balanzaId: number) {
+  function seleccionarBalanzaIdle(id: number) {
+    balanzaSeleccionadaId.value = id
+  }
+
+  function agregarItemEscaneoBalanza(item: Omit<ItemVenta, 'id'>) {
+    const id = balanzaSeleccionadaId.value
+    if (id === null) return
+    if (!itemsPorBalanza.value[id]) itemsPorBalanza.value[id] = []
+    itemsPorBalanza.value[id].push({ ...item, id: nextItemId.value++ })
+  }
+
+  function eliminarItemDeBalanza(balanzaId: number, itemId: number) {
+    if (!itemsPorBalanza.value[balanzaId]) return
+    itemsPorBalanza.value[balanzaId] = itemsPorBalanza.value[balanzaId].filter(i => i.id !== itemId)
+  }
+
+  function confirmarBalanzaParaCobro(balanzaId: number) {
     const balanza = MOCK_COLA_BALANZAS.find(b => b.id === balanzaId)
-    if (!balanza || !balanza.activa) return
-
+    if (!balanza) return
     const nueva: TabVenta = {
       tabId: nextTabId.value++,
       preBoleta: {
-        id: `mock-${balanzaId}-${Date.now()}`,
+        id: `${balanzaId}-${Date.now()}`,
         balanzaId: balanza.id,
         balanzaNombre: balanza.nombre,
-        items: [...MOCK_ITEMS_TAB1],
-        creadaHace: balanza.creadaHace,
+        items: [...(itemsPorBalanza.value[balanzaId] ?? [])],
+        creadaHace: 'ahora',
       },
       mergedWith: [],
     }
     tabs.value.push(nueva)
+    itemsPorBalanza.value[balanzaId] = []
+    balanzaSeleccionadaId.value = null
+    metodoPago.value = 'debito'
+    montoRecibido.value = 0
     setTabActivo(nueva.tabId)
+  }
+
+  // Mantener para merge flow
+  function seleccionarPreBoleta(balanzaId: number) {
+    seleccionarBalanzaIdle(balanzaId)
   }
 
   return {
     // State
-    estado, tabs, tabActivoId, metodoPago, montoRecibido,
+    estado, tabs, tabActivoId, nextTabId, nextItemId, metodoPago, montoRecibido,
     showModalScan, showModalEdit, editingItemId, preboletaEscan, offline,
+    itemsPorBalanza, balanzaSeleccionadaId,
+    pagoMixto, montoMixtoTarjeta, metodoPagoSecundario,
     // Computed
-    tabActivo, items, total, neto, iva, vuelto,
+    tabActivo, items, total, neto, iva, vuelto, montoMixtoEfectivo,
     esMerged, mergedCount, totalMergePreview, itemsMergePreview, editingItem, otrosTabs,
     // Actions
     irA, procesarCobro, nuevaVenta,
@@ -288,5 +352,31 @@ export const useCajaStore = defineStore('caja', () => {
     abrirModalEdit, cerrarModalEdit, guardarEdicionItem, eliminarItem,
     setMetodoPago, setMontoRecibido,
     toggleOffline, seleccionarPreBoleta,
+    seleccionarBalanzaIdle, agregarItemEscaneoBalanza, eliminarItemDeBalanza, confirmarBalanzaParaCobro,
+    togglePagoMixto, setMontoMixtoTarjeta, setMetodoPagoSecundario,
   }
+}, {
+  persist: {
+    key: 'comerciales-caja',
+    paths: [
+      'tabs', 'tabActivoId', 'nextTabId', 'nextItemId',
+      'estado', 'metodoPago', 'montoRecibido',
+      'itemsPorBalanza',
+      'pagoMixto', 'montoMixtoTarjeta', 'metodoPagoSecundario',
+    ],
+    afterRestore(ctx) {
+      const s = ctx.store.estado
+      if (s === 'processing' || s === 'success') {
+        ctx.store.estado = ctx.store.tabs.length > 0 ? 'active' : 'idle'
+      }
+      ctx.store.showModalScan        = false
+      ctx.store.showModalEdit        = false
+      ctx.store.editingItemId        = null
+      ctx.store.preboletaEscan       = null
+      ctx.store.balanzaSeleccionadaId = null
+      ctx.store.pagoMixto            = false
+      ctx.store.montoMixtoTarjeta    = 0
+      ctx.store.metodoPagoSecundario = null
+    },
+  },
 })

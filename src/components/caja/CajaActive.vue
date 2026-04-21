@@ -158,82 +158,157 @@
     </div>
 
     <!-- ── Panel derecho: cobro ── -->
-    <div class="w-72 flex flex-col bg-surface shrink-0">
-      <div class="flex-1 p-5 flex flex-col gap-5 overflow-y-auto">
+    <div class="w-72 flex flex-col bg-surface shrink-0 overflow-hidden">
+      <div class="flex-1 px-4 py-3 flex flex-col gap-3 overflow-y-auto">
 
         <!-- Resumen -->
         <div>
-          <p class="text-xs text-muted uppercase tracking-wider mb-3">Resumen</p>
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-sm">
+          <p class="text-xs text-muted uppercase tracking-wider mb-1.5">Resumen</p>
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs">
               <span class="text-secondary">Subtotal</span>
               <span class="text-primary">${{ cajaStore.neto.toLocaleString('es-CL') }}</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
               <span class="text-secondary">IVA 19%</span>
               <span class="text-primary">${{ cajaStore.iva.toLocaleString('es-CL') }}</span>
             </div>
           </div>
-          <div class="mt-3 pt-3 border-t border-border flex justify-between items-baseline">
-            <span class="text-sm text-secondary">Total</span>
-            <span class="text-2xl font-bold text-primary">${{ cajaStore.total.toLocaleString('es-CL') }}</span>
+          <div class="mt-2 pt-2 border-t border-border flex justify-between items-baseline">
+            <span class="text-xs text-secondary">Total</span>
+            <span class="text-xl font-bold text-primary">${{ cajaStore.total.toLocaleString('es-CL') }}</span>
           </div>
-          <div class="text-xs text-muted text-right mt-1">{{ cajaStore.items.length }} ítems</div>
+          <div class="text-xs text-muted text-right mt-0.5">{{ cajaStore.items.length }} ítems</div>
         </div>
 
         <!-- Método de pago -->
         <div>
-          <p class="text-xs text-muted uppercase tracking-wider mb-2">Método de pago</p>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="flex items-center justify-between mb-1.5">
+            <p class="text-xs text-muted uppercase tracking-wider">Método de pago</p>
+            <button
+              @click="cajaStore.togglePagoMixto()"
+              :class="cajaStore.pagoMixto ? 'bg-brand-500 border-brand-500' : 'border-border'"
+              class="w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0"
+              title="Pago mixto (efectivo + otro método)"
+            >
+              <svg v-if="cajaStore.pagoMixto" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
             <button
               v-for="m in metodos"
               :key="m.key"
               @click="cajaStore.setMetodoPago(m.key as any)"
               :class="cajaStore.metodoPago === m.key ? 'active' : ''"
-              class="btn-pay-method border rounded-lg px-3 py-2.5 text-xs font-medium text-left"
+              class="btn-pay-method border rounded-lg px-3 py-2 text-xs font-medium text-left"
             >
-              <div class="text-base mb-0.5">{{ m.emoji }}</div>
+              <div class="text-sm mb-0.5">{{ m.emoji }}</div>
               {{ m.label }}
             </button>
           </div>
         </div>
 
-        <!-- Panel vuelto (solo efectivo en vista active) -->
-        <div v-if="cajaStore.metodoPago === 'efectivo'" class="space-y-3 slide-up">
+        <!-- Pago mixto: base = tarjeta → campo tarjeta editable + efectivo auto -->
+        <div v-if="cajaStore.pagoMixto && cajaStore.metodoPago !== 'efectivo'" class="space-y-2 slide-up">
           <div>
-            <p class="text-xs text-muted mb-1.5">Monto recibido</p>
+            <p class="text-xs text-muted mb-1">Monto {{ metodoPagoLabel }}</p>
+            <input
+              type="number"
+              :value="cajaStore.montoMixtoTarjeta"
+              @input="e => cajaStore.setMontoMixtoTarjeta(Number((e.target as HTMLInputElement).value))"
+              class="w-full bg-surface-2 border border-border rounded-lg px-3 py-3 text-xl text-primary text-left focus:outline-none focus:border-brand-500 font-mono"
+            />
+          </div>
+          <div class="flex gap-1 flex-wrap">
+            <button @click="cajaStore.setMontoMixtoTarjeta(cajaStore.montoMixtoTarjeta + 1000)" class="cash-quick exact">+$1.000</button>
+            <button @click="cajaStore.setMontoMixtoTarjeta(cajaStore.montoMixtoTarjeta + 100)"  class="cash-quick exact">+$100</button>
+            <button @click="cajaStore.setMontoMixtoTarjeta(Math.max(0, cajaStore.montoMixtoTarjeta - 1000))" class="cash-quick cash-quick--minus">−$1.000</button>
+            <button @click="cajaStore.setMontoMixtoTarjeta(Math.max(0, cajaStore.montoMixtoTarjeta - 100))"  class="cash-quick cash-quick--minus">−$100</button>
+          </div>
+          <div class="bg-surface-2 border border-border rounded-lg px-3 py-3 flex items-center justify-between">
+            <span class="text-xl font-bold text-primary">${{ cajaStore.montoMixtoEfectivo.toLocaleString('es-CL') }}</span>
+            <span class="text-[18px] text-muted">Efectivo</span>
+          </div>
+        </div>
+
+        <!-- Pago mixto: base = efectivo → input efectivo + selector + tarjeta auto -->
+        <div v-if="cajaStore.pagoMixto && cajaStore.metodoPago === 'efectivo'" class="space-y-2 slide-up">
+          <!-- Efectivo: siempre editable -->
+          <div>
+            <p class="text-xs text-muted mb-1">Monto efectivo</p>
             <input
               type="number"
               :value="cajaStore.montoRecibido"
               @input="e => cajaStore.setMontoRecibido(Number((e.target as HTMLInputElement).value))"
-              class="w-full bg-surface-2 border border-border rounded-lg px-3 py-2.5 text-sm text-primary text-right focus:outline-none focus:border-brand-500 font-mono"
+              class="w-full bg-surface-2 border border-border rounded-lg px-3 py-3 text-xl text-primary text-left focus:outline-none focus:border-brand-500 font-mono"
             />
           </div>
-          <div class="flex gap-1.5 flex-wrap">
-            <button v-for="v in [5000, 10000, 20000, 50000]" :key="v"
+          <!-- Selector segundo método -->
+          <div>
+            <p class="text-xs text-muted uppercase tracking-wider mb-1.5">Segundo método</p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button
+                v-for="m in metodosSecundarios"
+                :key="m.key"
+                @click="cajaStore.setMetodoPagoSecundario(m.key as any)"
+                :class="cajaStore.metodoPagoSecundario === m.key ? 'active' : ''"
+                class="btn-pay-method border rounded-lg px-2 py-2 text-xs font-medium text-left"
+              >
+                <div class="text-sm mb-0.5">{{ m.emoji }}</div>
+                {{ m.label }}
+              </button>
+            </div>
+          </div>
+          <!-- Monto tarjeta auto = total - efectivo -->
+          <div v-if="cajaStore.metodoPagoSecundario" class="bg-surface-2 border border-border rounded-lg px-3 py-3 flex items-center justify-between">
+            <span class="text-xl font-bold" :class="montoTarjetaAuto < 0 ? 'text-danger-400' : 'text-primary'">
+              {{ montoTarjetaAuto < 0 ? '−' : '' }}${{ Math.abs(montoTarjetaAuto).toLocaleString('es-CL') }}
+            </span>
+            <span class="text-[18px] text-muted">{{ segundoMetodoLabel }}</span>
+          </div>
+        </div>
+
+        <!-- Panel efectivo normal (solo sin pago mixto) -->
+        <div v-if="!cajaStore.pagoMixto && cajaStore.metodoPago === 'efectivo'" class="space-y-2 slide-up">
+          <div>
+            <p class="text-xs text-muted mb-1">Monto recibido</p>
+            <input
+              type="number"
+              :value="cajaStore.montoRecibido"
+              @input="e => cajaStore.setMontoRecibido(Number((e.target as HTMLInputElement).value))"
+              class="w-full bg-surface-2 border border-border rounded-lg px-3 py-3 text-xl text-primary text-left focus:outline-none focus:border-brand-500 font-mono"
+            />
+          </div>
+          <div class="flex gap-1 flex-wrap">
+            <button v-for="v in [5000, 10000, 20000]" :key="v"
               @click="cajaStore.setMontoRecibido(v)"
               class="cash-quick">
               ${{ v.toLocaleString('es-CL') }}
             </button>
-            <button @click="cajaStore.setMontoRecibido(cajaStore.total)" class="cash-quick exact">
-              Exacto
-            </button>
+            <button @click="cajaStore.setMontoRecibido(cajaStore.total)" class="cash-quick exact">Exacto</button>
+            <button @click="cajaStore.setMontoRecibido(cajaStore.montoRecibido + 1000)" class="cash-quick exact">+$1.000</button>
+            <button @click="cajaStore.setMontoRecibido(cajaStore.montoRecibido + 100)"  class="cash-quick exact">+$100</button>
+            <button @click="cajaStore.setMontoRecibido(Math.max(0, cajaStore.montoRecibido - 1000))" class="cash-quick cash-quick--minus">−$1.000</button>
+            <button @click="cajaStore.setMontoRecibido(Math.max(0, cajaStore.montoRecibido - 100))"  class="cash-quick cash-quick--minus">−$100</button>
           </div>
-          <div class="bg-surface-2 rounded-lg p-3 flex justify-between items-center">
-            <span class="text-xs text-muted">Vuelto</span>
-            <span class="text-lg font-bold text-success-400">
-              ${{ cajaStore.vuelto.toLocaleString('es-CL') }}
+          <div class="bg-surface-2 border border-border rounded-lg px-3 py-3 flex items-center justify-between mt-1">
+            <span class="text-xl font-bold" :class="cajaStore.vuelto < 0 ? 'text-danger-400' : 'text-success-400'">
+              {{ cajaStore.vuelto < 0 ? '−' : '' }}${{ Math.abs(cajaStore.vuelto).toLocaleString('es-CL') }}
             </span>
+            <span class="text-[18px] text-muted">Vuelto</span>
           </div>
         </div>
 
       </div>
 
       <!-- Botón cobrar -->
-      <div class="p-4 border-t border-border shrink-0">
+      <div class="px-4 py-3 border-t border-border shrink-0">
         <button
           @click="cajaStore.procesarCobro()"
-          class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl py-4 text-sm transition-colors flex items-center justify-center gap-2"
+          :disabled="!puedeCobrar"
+          class="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 text-sm transition-colors flex items-center justify-center gap-2"
         >
           Cobrar ${{ cajaStore.total.toLocaleString('es-CL') }}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,7 +321,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCajaStore } from '../../stores/caja.store'
 
 const cajaStore = useCajaStore()
@@ -272,4 +347,30 @@ const metodos = [
   { key: 'credito',       emoji: '💳', label: 'Crédito'   },
   { key: 'transferencia', emoji: '🏦', label: 'Transfer.' },
 ]
+
+const metodosSecundarios = [
+  { key: 'debito',        emoji: '💳', label: 'Débito'    },
+  { key: 'credito',       emoji: '💳', label: 'Crédito'   },
+  { key: 'transferencia', emoji: '🏦', label: 'Transfer.' },
+]
+
+const metodoLabels: Record<string, string> = {
+  efectivo: 'Efectivo', debito: 'Débito', credito: 'Crédito', transferencia: 'Transferencia',
+}
+const metodoPagoLabel    = computed(() => metodoLabels[cajaStore.metodoPago] ?? cajaStore.metodoPago)
+const segundoMetodoLabel = computed(() => metodoLabels[cajaStore.metodoPagoSecundario ?? ''] ?? '')
+
+// Base efectivo: tarjeta = total - efectivo ingresado
+const montoTarjetaAuto = computed(() => cajaStore.total - cajaStore.montoRecibido)
+
+const puedeCobrar = computed(() => {
+  if (!cajaStore.pagoMixto) return true
+  const t    = cajaStore.total
+  const card = cajaStore.montoMixtoTarjeta
+  if (cajaStore.metodoPago === 'efectivo') {
+    const r = cajaStore.montoRecibido
+    return cajaStore.metodoPagoSecundario !== null && r > 0 && r < t
+  }
+  return card > 0 && card <= t
+})
 </script>

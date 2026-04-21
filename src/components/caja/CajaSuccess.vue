@@ -38,29 +38,28 @@
       <!-- Acciones -->
       <div class="flex gap-3">
         <button
-          @click="cajaStore.nuevaVenta()"
+          @click="anular"
+          class="flex-1 border border-border text-secondary hover:text-danger-400 hover:border-danger-400/50 font-medium rounded-xl py-3 text-sm transition-colors"
+        >
+          Anular
+        </button>
+        <button
+          @click="confirmar"
           class="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl py-3 text-sm transition-colors"
         >
-          Nueva venta
-        </button>
-        <button class="px-4 py-3 rounded-xl border border-border text-secondary hover:text-primary text-sm transition-colors">
-          Detalle
+          Confirmar
         </button>
       </div>
 
-      <p class="text-xs text-muted mt-4">
-        Cerrando en <span class="font-mono">{{ countdown }}</span>s...
-      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useCajaStore } from '../../stores/caja.store'
 
 const cajaStore = useCajaStore()
-const countdown = ref(3)
 
 const metodoPagoLabel = computed(() => ({
   efectivo:      'Efectivo',
@@ -69,18 +68,15 @@ const metodoPagoLabel = computed(() => ({
   transferencia: 'Transferencia',
 }[cajaStore.metodoPago] ?? cajaStore.metodoPago))
 
-let intervalo: ReturnType<typeof setInterval>
+function confirmar() {
+  const tabId = cajaStore.tabActivo?.tabId
+  if (tabId !== undefined) {
+    cajaStore.cerrarTab(tabId)
+    if (cajaStore.tabs.length > 0) cajaStore.irA('active')
+  }
+}
 
-onMounted(() => {
-  countdown.value = 3
-  intervalo = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(intervalo)
-      cajaStore.nuevaVenta()
-    }
-  }, 1000)
-})
-
-onUnmounted(() => clearInterval(intervalo))
+function anular() {
+  cajaStore.irA(cajaStore.metodoPago === 'efectivo' ? 'cash' : 'active')
+}
 </script>

@@ -35,8 +35,21 @@
         <span>2 por sincronizar</span>
       </div>
 
-      <!-- Reloj -->
-      <div class="text-xs text-secondary font-mono">{{ hora }}</div>
+      <!-- Theme Toggle -->
+      <button
+        @click="themeStore.toggle()"
+        :title="themeStore.current === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+        class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-2 transition-colors"
+      >
+        <svg v-if="themeStore.current === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+        </svg>
+        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      </button>
 
       <!-- Zoom Dropdown -->
       <div class="relative">
@@ -76,21 +89,8 @@
         </div>
       </div>
 
-      <!-- Theme Toggle -->
-      <button
-        @click="themeStore.toggle()"
-        :title="themeStore.current === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
-        class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-2 transition-colors"
-      >
-        <svg v-if="themeStore.current === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-        </svg>
-        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      </button>
+      <!-- Reloj -->
+      <div class="text-xs text-secondary font-mono">{{ hora }}</div>
 
       <!-- Avatar -->
       <div class="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-semibold">
@@ -167,7 +167,17 @@ watch(() => themeStore.current, () => themeStore.apply())
 const hora = ref('')
 
 function actualizarHora() {
-  hora.value = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  const now = new Date()
+  const time = now.toLocaleTimeString('es-CL', {
+    hour: '2-digit', minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Santiago'
+  })
+  const date = now.toLocaleDateString('es-CL', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    timeZone: 'America/Santiago'
+  })
+  hora.value = `${time} · ${date}`
 }
 
 let intervalo: ReturnType<typeof setInterval>
