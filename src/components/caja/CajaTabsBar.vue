@@ -32,9 +32,9 @@
         Unir
       </span>
 
-      <!-- Cerrar tab -->
+      <!-- Cerrar tab (registra cancelación si tiene ítems) -->
       <span
-        @click.stop="cajaStore.cerrarTab(tab.tabId)"
+        @click.stop="cajaStore.cancelarTab(tab.tabId)"
         class="ml-0.5 text-muted hover:text-danger-400 leading-none transition-colors"
       >✕</span>
     </button>
@@ -60,10 +60,9 @@ const cajaStore = useCajaStore()
 
 function tabLabel(tab: TabVenta): string {
   const total = tab.preBoleta.items.reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
-  const merged = tab.mergedWith.length > 0
-  const origen = merged
-    ? tab.preBoleta.balanzaNombre.replace('Balanza ', 'Bal. ') + '+' + tab.mergedWith.length
+  const origen = tab.mergedWith.length > 0
+    ? tab.preBoleta.balanzaNombre + '+' + tab.mergedWith.length
     : tab.preBoleta.balanzaNombre
-  return `${origen} · $${total.toLocaleString('es-CL')}`
+  return `#${tab.preBoleta.numero} · ${origen} · $${total.toLocaleString('es-CL')}`
 }
 </script>

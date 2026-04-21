@@ -162,10 +162,22 @@ export interface ItemVenta {
 
 export interface PreBoleta {
   id: string
+  numero: number
   balanzaId: number
   balanzaNombre: string
   items: ItemVenta[]
   creadaHace: string
+}
+
+export interface EventoCaja {
+  id: string
+  balanzaId: number
+  balanzaNombre: string
+  numeroBoleta: number
+  total: number
+  itemCount: number
+  items: ItemVenta[]
+  fecha: string
 }
 
 export interface TabVenta {

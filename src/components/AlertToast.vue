@@ -8,12 +8,12 @@
     leave-to-class="translate-y-2 opacity-0"
   >
     <div
-      class="flex items-start gap-3 w-72 rounded-xl border shadow-xl cursor-pointer select-none"
+      class="flex items-center gap-3 w-72 rounded-xl border shadow-xl cursor-pointer select-none pl-3"
       :class="containerClass"
       @click="handleClick"
     >
       <!-- Ícono severidad -->
-      <div class="mt-3 shrink-0">
+      <div class="shrink-0">
         <svg v-if="toast.severity === 'critical'" class="w-4 h-4" :class="iconClass" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -37,7 +37,7 @@
       <!-- Cerrar -->
       <button
         @click.stop="$emit('dismiss', toast.id)"
-        class="mt-2 mr-2 shrink-0 p-1 rounded transition-colors"
+        class="mr-2 shrink-0 p-1 rounded transition-colors"
         :class="closeClass"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CajaEstado, ItemVenta, TabVenta, PreBoleta, BalanzaEnCola } from '../types'
+import { useReportesStore } from './reportes.store'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -17,25 +18,27 @@ const MOCK_ITEMS_MERGE: ItemVenta[] = [
 
 const MOCK_PREBOLETA_TAB1: PreBoleta = {
   id: '9a3f-b821',
+  numero: 1,
   balanzaId: 1,
-  balanzaNombre: 'Balanza 1',
+  balanzaNombre: 'B1',
   items: [...MOCK_ITEMS_TAB1],
   creadaHace: 'hace 1 min',
 }
 
 const MOCK_PREBOLETA_SCAN: PreBoleta = {
   id: 'c7d2-e094',
+  numero: 2,
   balanzaId: 3,
-  balanzaNombre: 'Balanza 3',
+  balanzaNombre: 'B3',
   items: [...MOCK_ITEMS_MERGE],
   creadaHace: 'hace 8 min',
 }
 
 export const MOCK_COLA_BALANZAS: BalanzaEnCola[] = [
-  { id: 1, nombre: 'Balanza 1', total: 21350, itemCount: 3, creadaHace: 'hace 1 min', activa: true,  advertencia: false },
-  { id: 2, nombre: 'Balanza 2', total: 0,     itemCount: 0, creadaHace: '',           activa: false, advertencia: false },
-  { id: 3, nombre: 'Balanza 3', total: 3200,  itemCount: 1, creadaHace: 'hace 8 min', activa: true,  advertencia: true  },
-  { id: 4, nombre: 'Balanza 4', total: 0,     itemCount: 0, creadaHace: '',           activa: false, advertencia: false },
+  { id: 1, nombre: 'B1', total: 21350, itemCount: 3, creadaHace: 'hace 1 min', activa: true,  advertencia: false },
+  { id: 2, nombre: 'B2', total: 0,     itemCount: 0, creadaHace: '',           activa: false, advertencia: false },
+  { id: 3, nombre: 'B3', total: 3200,  itemCount: 1, creadaHace: 'hace 8 min', activa: true,  advertencia: true  },
+  { id: 4, nombre: 'B4', total: 0,     itemCount: 0, creadaHace: '',           activa: false, advertencia: false },
 ]
 
 // ── Store ────────────────────────────────────────────────────────────────────
@@ -65,6 +68,9 @@ export const useCajaStore = defineStore('caja', () => {
 
   // Offline
   const offline = ref<boolean>(false)
+
+  // Contador global de pre-boletas (nunca retrocede)
+  const nextPreboletaNum = ref<number>(3)
 
   // Idle — items en curso por balanza (antes de confirmar cobro)
   const itemsPorBalanza = ref<Record<number, ItemVenta[]>>({
@@ -166,6 +172,25 @@ export const useCajaStore = defineStore('caja', () => {
     if (tabs.value.length === 0) {
       estado.value = 'idle'
     }
+  }
+
+  function cancelarTab(tabId: number) {
+    try {
+      const tab = tabs.value.find(t => t.tabId === tabId)
+      if (tab && tab.preBoleta.items.length > 0) {
+        const tabTotal = tab.preBoleta.items.reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
+        useReportesStore().registrarEventoCaja({
+          balanzaId:     tab.preBoleta.balanzaId,
+          balanzaNombre: tab.preBoleta.balanzaNombre,
+          numeroBoleta:  tab.preBoleta.numero ?? 0,
+          total:         tabTotal,
+          itemCount:     tab.preBoleta.items.length,
+          items:         [...tab.preBoleta.items],
+          fecha:         new Date().toISOString(),
+        })
+      }
+    } catch (_) { /* no bloquear el cierre del tab */ }
+    cerrarTab(tabId)
   }
 
   // ── Acciones — Escaneo 2° QR ──────────────────────────────────────────────
@@ -316,6 +341,7 @@ export const useCajaStore = defineStore('caja', () => {
       tabId: nextTabId.value++,
       preBoleta: {
         id: `${balanzaId}-${Date.now()}`,
+        numero: nextPreboletaNum.value++,
         balanzaId: balanza.id,
         balanzaNombre: balanza.nombre,
         items: [...(itemsPorBalanza.value[balanzaId] ?? [])],
@@ -324,11 +350,9 @@ export const useCajaStore = defineStore('caja', () => {
       mergedWith: [],
     }
     tabs.value.push(nueva)
+    // Limpiar items de la balanza y dejarla libre para el próximo cliente
     itemsPorBalanza.value[balanzaId] = []
-    balanzaSeleccionadaId.value = null
-    metodoPago.value = 'debito'
-    montoRecibido.value = 0
-    setTabActivo(nueva.tabId)
+    // NO navegar a 'active' — quedar en idle para flujo continuo
   }
 
   // Mantener para merge flow
@@ -338,7 +362,7 @@ export const useCajaStore = defineStore('caja', () => {
 
   return {
     // State
-    estado, tabs, tabActivoId, nextTabId, nextItemId, metodoPago, montoRecibido,
+    estado, tabs, tabActivoId, nextTabId, nextItemId, nextPreboletaNum, metodoPago, montoRecibido,
     showModalScan, showModalEdit, editingItemId, preboletaEscan, offline,
     itemsPorBalanza, balanzaSeleccionadaId,
     pagoMixto, montoMixtoTarjeta, metodoPagoSecundario,
@@ -347,7 +371,7 @@ export const useCajaStore = defineStore('caja', () => {
     esMerged, mergedCount, totalMergePreview, itemsMergePreview, editingItem, otrosTabs,
     // Actions
     irA, procesarCobro, nuevaVenta,
-    setTabActivo, cerrarTab,
+    setTabActivo, cerrarTab, cancelarTab,
     abrirModalScan, cerrarModalScan, confirmarMerge, abrirEnNuevaTab,
     abrirModalEdit, cerrarModalEdit, guardarEdicionItem, eliminarItem,
     setMetodoPago, setMontoRecibido,
@@ -359,9 +383,9 @@ export const useCajaStore = defineStore('caja', () => {
   persist: {
     key: 'comerciales-caja',
     paths: [
-      'tabs', 'tabActivoId', 'nextTabId', 'nextItemId',
+      'tabs', 'tabActivoId', 'nextTabId', 'nextItemId', 'nextPreboletaNum',
       'estado', 'metodoPago', 'montoRecibido',
-      'itemsPorBalanza',
+      'itemsPorBalanza', 'balanzaSeleccionadaId',
       'pagoMixto', 'montoMixtoTarjeta', 'metodoPagoSecundario',
     ],
     afterRestore(ctx) {
@@ -373,10 +397,18 @@ export const useCajaStore = defineStore('caja', () => {
       ctx.store.showModalEdit        = false
       ctx.store.editingItemId        = null
       ctx.store.preboletaEscan       = null
-      ctx.store.balanzaSeleccionadaId = null
       ctx.store.pagoMixto            = false
       ctx.store.montoMixtoTarjeta    = 0
       ctx.store.metodoPagoSecundario = null
+      // Migración: pre-boletas viejas sin número reciben uno correlativo
+      let maxNum = ctx.store.nextPreboletaNum ?? 1
+      ctx.store.tabs.forEach((tab: TabVenta, idx: number) => {
+        if (tab.preBoleta.numero === undefined || tab.preBoleta.numero === null) {
+          tab.preBoleta.numero = maxNum + idx
+        }
+        if (tab.preBoleta.numero >= maxNum) maxNum = tab.preBoleta.numero + 1
+      })
+      ctx.store.nextPreboletaNum = maxNum
     },
   },
 })

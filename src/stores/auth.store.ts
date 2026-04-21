@@ -111,7 +111,8 @@ export const useAuthStore = defineStore(
   {
     persist: {
       key: 'comerciales-auth',
-      paths: ['user', 'token']
+      paths: ['user', 'token'],
+      storage: sessionStorage
     }
   }
 )

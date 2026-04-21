@@ -209,11 +209,214 @@
       </div>
     </div>
 
+    <!-- ── Anulaciones de Pre-boletas ──────────────────────────────────────── -->
+    <div class="space-y-4">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-primary">Anulaciones de Pre-boletas</h2>
+          <p class="text-sm text-muted mt-0.5">Pre-boletas canceladas desde la Vista Caja</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted mr-2">{{ evtFiltrados.length }} de {{ reportesStore.eventosCaja.length }} registros</span>
+
+          <!-- Filtros toggle -->
+          <button
+            @click="showEvtFiltros = !showEvtFiltros"
+            :class="showEvtFiltros ? 'bg-brand-500/10 border-brand-500/40 text-brand-400' : 'bg-surface-2 border-border text-secondary hover:text-primary'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            Filtros
+          </button>
+
+          <!-- Borrar todo -->
+          <button
+            @click="confirmarBorrarTodo"
+            :disabled="reportesStore.eventosCaja.length === 0"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-danger-500/30 text-danger-400 hover:bg-danger-500/10 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Borrar todo
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel de filtros -->
+      <div v-if="showEvtFiltros" class="flex flex-wrap items-end gap-4 p-4 bg-surface border border-border rounded-xl">
+        <div>
+          <label class="text-xs text-muted uppercase tracking-wider block mb-1">Balanza</label>
+          <select v-model="evtFiltroBalanza"
+            class="px-3 py-2 bg-input border border-border rounded-lg text-sm text-primary outline-none focus:border-brand-500 transition-colors">
+            <option value="">Todas</option>
+            <option value="B1">B1</option>
+            <option value="B2">B2</option>
+            <option value="B3">B3</option>
+            <option value="B4">B4</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-muted uppercase tracking-wider block mb-1">Fecha</label>
+          <CalendarPicker
+            :singleDate="evtFiltroFecha"
+            :dateFrom="evtFiltroDesde"
+            :dateTo="evtFiltroHasta"
+            :filterMode="evtFilterMode"
+            @update:singleDate="evtFiltroFecha = $event"
+            @update:dateFrom="evtFiltroDesde = $event"
+            @update:dateTo="evtFiltroHasta = $event"
+            @update:filterMode="evtFilterMode = $event"
+          />
+        </div>
+        <button v-if="evtHayFiltros"
+          @click="limpiarEvtFiltros"
+          class="px-3 py-2 text-xs text-secondary hover:text-primary bg-surface-2 hover:bg-border rounded-lg transition-colors">
+          Limpiar filtros
+        </button>
+      </div>
+
+      <!-- Tabla -->
+      <div class="bg-surface border border-border rounded-xl overflow-hidden">
+        <div v-if="evtFiltrados.length === 0" class="px-4 py-12 text-center text-muted text-sm">
+          {{ reportesStore.eventosCaja.length === 0 ? 'Sin cancelaciones registradas.' : 'No hay registros con los filtros aplicados.' }}
+        </div>
+        <table v-else class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border bg-input">
+              <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-8"></th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-20">Balanza</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-28">N° Pre-boleta</th>
+              <th class="text-right px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-32">Total</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-20">Ítems</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Fecha / Hora</th>
+              <th class="w-10"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            <template v-for="evt in evtFiltrados" :key="evt.id">
+              <!-- Fila principal -->
+              <tr
+                @click="expandedEvtId = expandedEvtId === evt.id ? null : evt.id"
+                class="hover:bg-surface-2 transition-colors cursor-pointer"
+              >
+                <td class="px-4 py-3 text-center">
+                  <svg class="w-3.5 h-3.5 text-muted transition-transform mx-auto"
+                    :class="expandedEvtId === evt.id ? 'rotate-90' : ''"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </td>
+                <td class="px-4 py-3 text-center font-semibold text-primary">{{ evt.balanzaId }}</td>
+                <td class="px-4 py-3 text-center font-mono text-xs text-secondary">{{ evt.numeroBoleta }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-primary">${{ evt.total.toLocaleString('es-CL') }}</td>
+                <td class="px-4 py-3 text-center text-xs text-secondary">{{ evt.itemCount }} ítem{{ evt.itemCount !== 1 ? 's' : '' }}</td>
+                <td class="px-4 py-3 text-xs text-secondary">{{ formatEvtFecha(evt.fecha) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <button
+                    @click.stop="reportesStore.eliminarEventoCaja(evt.id)"
+                    class="p-1 rounded text-muted hover:text-danger-400 hover:bg-danger-500/10 transition-colors"
+                    title="Eliminar registro"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Fila expandida: detalle de ítems -->
+              <tr v-if="expandedEvtId === evt.id" class="bg-input">
+                <td colspan="7" class="px-6 py-4">
+                  <div class="rounded-lg border border-border overflow-hidden">
+                    <table class="w-full text-xs">
+                      <thead>
+                        <tr class="bg-surface border-b border-border">
+                          <th class="text-left px-4 py-2 text-muted font-medium">Producto</th>
+                          <th class="text-right px-4 py-2 text-muted font-medium w-24">Cantidad</th>
+                          <th class="text-right px-4 py-2 text-muted font-medium w-32">P. Unitario</th>
+                          <th class="text-right px-4 py-2 text-muted font-medium w-32">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-border">
+                        <tr v-for="item in evt.items" :key="item.id" class="hover:bg-surface">
+                          <td class="px-4 py-2 text-primary">{{ item.name }}</td>
+                          <td class="px-4 py-2 text-right text-secondary">
+                            {{ item.unit === 'kg' ? item.qty.toFixed(3) + ' kg' : item.qty + ' UN' }}
+                          </td>
+                          <td class="px-4 py-2 text-right text-secondary">${{ item.priceUnit.toLocaleString('es-CL') }}</td>
+                          <td class="px-4 py-2 text-right font-medium text-primary">${{ Math.round(item.qty * item.priceUnit).toLocaleString('es-CL') }}</td>
+                        </tr>
+                      </tbody>
+                      <tfoot class="border-t border-border bg-surface">
+                        <tr>
+                          <td colspan="3" class="px-4 py-2 text-right font-semibold text-secondary">Total anulado</td>
+                          <td class="px-4 py-2 text-right font-bold text-danger-400">${{ evt.total.toLocaleString('es-CL') }}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useReportesStore } from '../stores/reportes.store'
+import CalendarPicker from '../components/CalendarPicker.vue'
+
+const reportesStore = useReportesStore()
+
+// ─── Anulaciones — filtros ────────────────────────────────────────────────────
+const showEvtFiltros   = ref(false)
+const evtFiltroBalanza = ref('')
+const evtFilterMode    = ref<'single' | 'range'>('single')
+const evtFiltroFecha   = ref('')
+const evtFiltroDesde   = ref('')
+const evtFiltroHasta   = ref('')
+const expandedEvtId    = ref<string | null>(null)
+
+const evtFiltrados = computed(() =>
+  reportesStore.eventosCaja.filter(evt => {
+    const matchBalanza = !evtFiltroBalanza.value || evt.balanzaNombre === evtFiltroBalanza.value
+    let matchFecha = true
+    if (evtFilterMode.value === 'single' && evtFiltroFecha.value) {
+      matchFecha = evt.fecha.startsWith(evtFiltroFecha.value)
+    } else if (evtFilterMode.value === 'range') {
+      const d = evt.fecha.slice(0, 10)
+      if (evtFiltroDesde.value) matchFecha = matchFecha && d >= evtFiltroDesde.value
+      if (evtFiltroHasta.value) matchFecha = matchFecha && d <= evtFiltroHasta.value
+    }
+    return matchBalanza && matchFecha
+  })
+)
+
+const evtHayFiltros = computed(() =>
+  !!evtFiltroBalanza.value || !!evtFiltroFecha.value || !!evtFiltroDesde.value || !!evtFiltroHasta.value
+)
+
+function limpiarEvtFiltros() {
+  evtFiltroBalanza.value = ''
+  evtFiltroFecha.value   = ''
+  evtFiltroDesde.value   = ''
+  evtFiltroHasta.value   = ''
+}
+
+function confirmarBorrarTodo() {
+  if (confirm('¿Borrar todos los registros de anulaciones? Esta acción no se puede deshacer.')) {
+    reportesStore.limpiarEventosCaja()
+  }
+}
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type EstadoPago = 'pendiente' | 'pagada' | 'vencida' | 'anulada'
@@ -415,5 +618,12 @@ function badgeRecepcion(e: EstadoRecepcion) {
 
 function labelRecepcion(e: EstadoRecepcion) {
   return { pendiente: 'Pendiente', parcial: 'Parcial', completa: 'Completa' }[e]
+}
+
+function formatEvtFecha(iso: string) {
+  const d = new Date(iso)
+  const fecha = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+  const hora  = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return `${fecha} · ${hora}`
 }
 </script>

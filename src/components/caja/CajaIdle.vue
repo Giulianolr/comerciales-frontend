@@ -50,12 +50,12 @@
           <button
             v-for="balanza in colaBalanzas"
             :key="balanza.id"
-            @click="cajaStore.seleccionarBalanzaIdle(balanza.id)"
+            @click="onClickBalanza(balanza.id)"
             :class="cajaStore.balanzaSeleccionadaId === balanza.id
               ? 'border-brand-500 bg-brand-500/10'
-              : balanza.advertencia
+              : itemCount(balanza.id) > 0 && balanza.advertencia
                 ? 'border-warning-500/30 hover:border-warning-500 bg-surface-2'
-                : 'border-border hover:border-brand-500 bg-surface-2'"
+                : 'border-border hover:border-brand-500/50 bg-surface-2'"
             class="border rounded-lg p-3 text-left transition-all group"
           >
             <div class="flex items-center justify-between mb-2">
@@ -241,7 +241,9 @@ const manualPrecio   = ref<number | null>(null)
 const manualQty      = ref<number | null>(null)
 const manualUnit     = ref<'UN' | 'kg'>('UN')
 
-onMounted(() => scannerInput.value?.focus())
+onMounted(() => {
+  scannerInput.value?.focus()
+})
 
 // Computed helpers
 const balanzaNombreSeleccionada = computed(() => {
@@ -258,13 +260,19 @@ const totalSeleccionada = computed(() =>
   itemsSeleccionada.value.reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
 )
 
+function onClickBalanza(balanzaId: number) {
+  // Siempre selecciona la balanza para escaneo — el tab existente
+  // es accesible desde "En cobro #N →" o desde la tabs bar
+  cajaStore.seleccionarBalanzaIdle(balanzaId)
+}
+
 function itemCount(balanzaId: number): number {
   return cajaStore.itemsPorBalanza[balanzaId]?.length ?? 0
 }
 
 function totalBalanza(balanzaId: number): number {
-  return (cajaStore.itemsPorBalanza[balanzaId] ?? [])
-    .reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
+  const items = cajaStore.itemsPorBalanza[balanzaId] ?? []
+  return items.reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
 }
 
 // Simula escaneo agregando un item mock a la balanza seleccionada

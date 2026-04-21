@@ -244,6 +244,7 @@ import { useAuthStore } from '../stores/auth.store'
 import { useThemeStore } from '../stores/theme.store'
 import { useZoomStore, ZOOM_LEVELS } from '../stores/zoom.store'
 import { useAlertsStore } from '../stores/alerts.store'
+import { useReportesStore } from '../stores/reportes.store'
 import AlertsPanel from '../components/AlertsPanel.vue'
 import AlertsToastContainer from '../components/AlertsToastContainer.vue'
 
@@ -254,7 +255,8 @@ const inventoryStore = useInventoryStore()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const zoomStore = useZoomStore()
-const alertsStore = useAlertsStore()
+const alertsStore   = useAlertsStore()
+const reportesStore = useReportesStore()
 
 const alertsPanelOpen = ref(false)
 const notifOpen = ref(false)
@@ -358,8 +360,9 @@ const updateTime = () => {
 // Sincronización automática entre tabs: cuando otra pestaña escribe en localStorage,
 // re-hidratamos los stores para que el estado sea siempre coherente.
 const PERSISTED_KEYS: Record<string, () => void> = {
-  'comerciales-dashboard': () => (dashboardStore as any).$hydrate(),
-  'comerciales-inventory': () => (inventoryStore as any).$hydrate(),
+  'comerciales-dashboard': () => (dashboardStore  as any).$hydrate(),
+  'comerciales-inventory': () => (inventoryStore  as any).$hydrate(),
+  'comerciales-reportes':  () => (reportesStore   as any).$hydrate(),
 }
 
 function onStorageChange(event: StorageEvent) {

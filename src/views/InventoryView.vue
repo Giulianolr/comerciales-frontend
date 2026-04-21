@@ -44,7 +44,7 @@
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-border bg-input">
-              <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-24">SKU</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-24">Cód. barra</th>
               <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Producto</th>
               <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-28">Categoría</th>
               <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-20">Unidad</th>
@@ -171,7 +171,7 @@
             <div class="flex items-center justify-between px-6 py-4 border-b border-border">
               <div>
                 <h3 class="font-semibold text-primary">Editar producto</h3>
-                <p class="text-xs text-muted mt-0.5 font-mono">{{ editingProduct.sku }}</p>
+                <p class="text-xs text-muted mt-0.5 font-mono">Cód. barra: {{ editingProduct.sku }}</p>
               </div>
               <button @click="closeEdit" class="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-surface-2 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
