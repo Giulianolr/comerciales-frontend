@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"C:\\\\Users\\\\Lenovo\\\\OneDrive\\\\Documentos\\\\GitHub\\\\axion-rewrite\\\\docs\\\\demo.html\")",
+      "Bash(find c:/Users/Lenovo/OneDrive/Documentos/GitHub/axion-rewrite -not -path '*/node_modules/*' -not -path '*/.git/*' '\\(' -name '*.ts' -o -name '*.tsx' -o -name '*.json' '\\)' -exec sed -i 's/@axion\\\\//@optimind\\\\//g' '{}' +)",
+      "Bash(find c:/Users/Lenovo/OneDrive/Documentos/GitHub/axion-rewrite -not -path '*/node_modules/*' -not -path '*/.git/*' '\\(' -name '*.tsx' -o -name '*.html' -o -name '*.md' '\\)' -exec sed -i s/AXION/OptiMind/g '{}' +)",
+      "Bash(find c:/Users/Lenovo/OneDrive/Documentos/GitHub/axion-rewrite -not -path '*/node_modules/*' -not -path '*/.git/*' -name package.json -exec sed -i s/axion/optimind/g '{}' +)",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('c:/Users/Lenovo/OneDrive/Documentos/GitHub/axion-rewrite/docs/demo.html','utf8'\\); console.log\\(c.slice\\(0,100\\)\\)\")",
+      "Bash(docker --version)",
+      "Bash(docker compose:*)",
+      "Bash(docker-compose --version)",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(wsl --list --verbose)",
+      "Bash(n8n --version)",
+      "Bash(npm install:*)",
+      "Bash(mkdir -p \"c:/Users/Lenovo/OneDrive/Documentos/GitHub/comerciales-infra/n8n/workflows\")",
+      "Bash(mkdir -p \"c:/Users/Lenovo/OneDrive/Documentos/GitHub/comerciales-infra/n8n/data\")"
+    ]
+  }
+}

@@ -1,0 +1,766 @@
+// ============================================================
+// AXION — Esquema Prisma
+// Origen: Ingeniería inversa MySQL 5.0.45 → PostgreSQL
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// CORE — Empresa / Sucursal / Bodega / Usuarios
+// ============================================================
+
+model Empresa {
+  codEmpresa          Int     @id @map("cod_empresa") @db.SmallInt
+  nFantasia           String? @map("n_fantasia") @db.VarChar(40)
+  rSocial             String? @map("r_social") @db.VarChar(40)
+  rut                 String  @map("rut") @db.VarChar(10)
+  giro                String? @db.VarChar(80)
+  direccion           String? @db.VarChar(40)
+  telefono1           String? @db.VarChar(20)
+  telefono2           String? @db.VarChar(20)
+  fax                 String? @db.VarChar(20)
+  encargado           String? @db.VarChar(30)
+  codPos              String? @map("cod_pos") @db.VarChar(6)
+  codActeco           String? @map("cod_acteco") @db.VarChar(15)
+  codPais             Int?    @map("cod_pais") @db.SmallInt
+  codCiudad           Int?    @map("cod_ciudad") @db.SmallInt
+  codComuna           Int     @map("cod_comuna") @db.SmallInt
+  // Retenciones
+  retenedorIla        Boolean @default(false) @map("retenedor_ila")
+  retenedorCarne      Boolean @default(false) @map("retenedor_carne")
+  retenedorHarina     Boolean @default(false) @map("retenedor_harina")
+  activarSeguridad    Boolean @default(false) @map("activar_seguridad")
+  // DTE / SII
+  claveConector       String? @map("clave_conector") @db.VarChar(60)
+  fechaResolucion     DateTime? @map("fecha_resolucion")
+  numeroResolucion    String? @map("numero_resolucion") @db.VarChar(3)
+  sucursalSii         String? @map("sucursal_sii") @db.VarChar(60)
+  produccionSii       Boolean @default(false) @map("produccion_sii")
+  licencias           Int     @default(1) @db.SmallInt
+  // Transbank
+  tbkTerminalId       String? @map("tbk_terminal_id") @db.VarChar(40)
+  tbkCodigoComercio   String? @map("tbk_codigo_comercio") @db.VarChar(40)
+  // Contacto
+  correo              String? @db.VarChar(60)
+  correoDte           String? @map("correo_dte") @db.VarChar(60)
+  fechaActivacion     DateTime? @map("fecha_activacion")
+
+  // Relaciones
+  sucursales          Sucursal[]
+  personal            Personal[]
+  productos           Producto[]
+  listasPrecios       ListaPrecios[]
+  cabezalVentas       CabezalVenta[]
+  cabezalCompras      CabezalCompra[]
+  caf                 Caf[]
+  bodegas             Bodega[]
+
+  @@map("empresas")
+}
+
+model Sucursal {
+  codEmpresa    Int    @map("cod_empresa") @db.SmallInt
+  codSucursal   Int    @map("cod_sucursal") @db.SmallInt
+  nombre        String? @db.Char(40)
+  direccion     String? @db.Char(80)
+  telefono      String? @db.VarChar(12)
+  encargado     String? @db.VarChar(40)
+  meta          Decimal @default(0) @map("meta") @db.Decimal(15, 4)
+
+  empresa       Empresa @relation(fields: [codEmpresa], references: [codEmpresa])
+  bodegas       Bodega[]
+
+  @@id([codEmpresa, codSucursal])
+  @@map("sucursales")
+}
+
+model Bodega {
+  codEmpresa    Int    @map("cod_empresa") @db.SmallInt
+  codSucursal   Int    @map("cod_sucursal") @db.SmallInt
+  codBodega     Int    @map("cod_bodega") @db.SmallInt
+  nombre        String? @db.VarChar(40)
+  direccion     String? @db.VarChar(80)
+  tipoPeriodo   String? @map("tipo_periodo") @db.VarChar(10)
+
+  empresa       Empresa  @relation(fields: [codEmpresa], references: [codEmpresa])
+  sucursal      Sucursal @relation(fields: [codEmpresa, codSucursal], references: [codEmpresa, codSucursal])
+  bodegaStock   BodegaStock[]
+
+  @@id([codEmpresa, codSucursal, codBodega])
+  @@map("bodegas")
+}
+
+model Personal {
+  codEmpresa        Int     @map("cod_empresa") @db.SmallInt
+  codEmpleado       Int     @map("cod_empleado")
+  rut               String  @db.Char(10)
+  nombre            String? @db.VarChar(40)
+  nombreSeguridad   String? @map("nombre_seguridad") @db.Char(30)  // username
+  clave             String? @db.Char(20)                            // password hash
+  claveLarga        String? @map("clave_larga") @db.Char(13)
+  direccion         String? @db.VarChar(40)
+  telefono          String? @db.Char(20)
+  codComuna         Int     @default(0) @map("cod_comuna") @db.SmallInt
+  codCiudad         Int     @default(0) @map("cod_ciudad") @db.SmallInt
+  codPais           Int     @default(0) @map("cod_pais") @db.SmallInt
+  fechaIngreso      DateTime? @map("fecha_ingreso")
+  sueldo            Decimal @default(0) @db.Decimal(12, 4)
+  porcComision      Decimal @default(0) @map("porc_comision") @db.Decimal(6, 2)
+  cargo             String? @db.VarChar(20)                         // 'CAJERO', 'SUPERVISOR'
+  email             String? @db.VarChar(40)
+  nivel             Int?    @db.SmallInt                            // 1=Admin 2=Super 3=Cajero
+  security          Boolean @default(false)                         // Acceso ERP
+  // Relaciones
+  empresa           Empresa @relation(fields: [codEmpresa], references: [codEmpresa])
+  transBalanzas     CabezalTransBalanza[]
+  ventasCajero      CabezalVenta[]       @relation("VentaCajero")
+  ventasVendedor    CabezalVenta[]       @relation("VentaVendedor")
+
+  @@id([codEmpresa, codEmpleado])
+  @@map("personal")
+}
+
+// ============================================================
+// INVENTARIO — Productos / Precios / Stock
+// ============================================================
+
+model Rubro {
+  codEmpresa  Int     @map("cod_empresa") @db.SmallInt
+  codRubro    Int     @map("cod_rubro")
+  nombre      String? @db.VarChar(40)
+  productos   Producto[]
+
+  @@id([codEmpresa, codRubro])
+  @@map("rubros")
+}
+
+model Familia {
+  codEmpresa  Int     @map("cod_empresa") @db.SmallInt
+  codFamilia  Int     @map("cod_familia")
+  nombre      String? @db.VarChar(40)
+  productos   Producto[]
+
+  @@id([codEmpresa, codFamilia])
+  @@map("familias")
+}
+
+model Subfamilia {
+  codEmpresa    Int     @map("cod_empresa") @db.SmallInt
+  codSubfamilia Int     @map("cod_subfamilia")
+  nombre        String? @db.VarChar(40)
+  productos     Producto[]
+
+  @@id([codEmpresa, codSubfamilia])
+  @@map("subfamilias")
+}
+
+model Marca {
+  codMarca  Int     @id @map("cod_marca") @db.SmallInt
+  nombre    String? @db.Char(40)
+  productos Producto[]
+
+  @@map("marcas")
+}
+
+model Impuesto {
+  codImp        Int     @id @map("cod_imp") @db.SmallInt
+  descripcion   String? @db.VarChar(55)
+  porcImp       Decimal @default(0) @map("porc_imp") @db.Decimal(8, 4)
+  retencion     Boolean @default(false)
+  ila           Boolean @default(false)
+  aplicaAlCosto Boolean @default(false) @map("aplica_al_costo")
+  codigoSii     Int     @default(0) @map("codigo_sii")
+  // Productos que usan este impuesto
+  productosIva  Producto[] @relation("ProductoIva")
+  productosIla  Producto[] @relation("ProductoIla")
+
+  @@map("impuestos")
+}
+
+model Producto {
+  codEmpresa          Int     @map("cod_empresa") @db.SmallInt
+  codArt              Int     @map("cod_art")
+  // Categorización
+  codRubro            Int     @default(0) @map("cod_rubro")
+  codFamilia          Int     @default(0) @map("cod_familia")
+  codSubfamilia       Int     @default(0) @map("cod_subfamilia")
+  codMarca            Int     @default(0) @map("cod_marca") @db.SmallInt
+  origen              Int     @default(0) @db.SmallInt
+  // Descripción
+  descripcion         String  @db.VarChar(60)
+  descripcionCorta    String? @map("descripcion_corta") @db.VarChar(25)
+  descripcionLarga    String? @map("descripcion_larga") @db.VarChar(80)
+  estado              Int     @default(1) @db.SmallInt          // 1=activo
+  // Stock
+  stock               Decimal @default(0) @db.Decimal(12, 4)
+  stockCritico        Decimal @default(0) @map("stock_critico") @db.Decimal(12, 4)
+  stockPedido         Decimal @default(0) @map("stock_pedido") @db.Decimal(12, 4)
+  stockComprometido   Decimal @default(0) @map("stock_comprometido") @db.Decimal(12, 4)
+  // Unidades
+  simboloUnLista      String? @map("simbolo_un_lista") @db.VarChar(10)  // 'KG', 'UN', 'LT'
+  simboloStock        String? @map("simbolo_stock") @db.VarChar(10)
+  simboloUnCompra     String? @map("simbolo_un_compra") @db.VarChar(10)
+  unidadLista         Decimal @default(1) @map("unidad_lista") @db.Decimal(10, 4)
+  unidadCompra        Decimal @default(1) @map("unidad_compra") @db.Decimal(10, 4)
+  // Costos
+  ultimoCosto         Decimal @default(0) @map("ultimo_costo") @db.Decimal(15, 4)
+  costoCompra         Decimal @default(0) @map("costo_compra") @db.Decimal(15, 4)
+  costoProm           Decimal @default(0) @map("costo_prom") @db.Decimal(15, 4)
+  costoReposicion     Decimal @default(0) @map("costo_reposicion") @db.Decimal(15, 4)
+  // Impuestos
+  codIva              Int     @default(0) @map("cod_iva") @db.SmallInt
+  codImptoAdic1       Int?    @map("cod_impto_adic1") @db.SmallInt
+  codImptoAdic2       Int?    @map("cod_impto_adic2") @db.SmallInt
+  // Balanza
+  tipoPesable         Int?    @map("tipo_pesable") @db.SmallInt   // 0=normal, 1=pesable
+  codBalanza          Int?    @map("cod_balanza")                  // PLU en balanza
+  tara                Decimal @default(0) @db.Decimal(15, 4)
+  cantidadXPieza      Decimal @default(0) @map("cantidad_x_pieza") @db.Decimal(12, 4)
+  // Características físicas
+  pesoBruto           Decimal @default(0) @map("peso_bruto") @db.Decimal(12, 4)
+  pesoNeto            Decimal @default(0) @map("peso_neto") @db.Decimal(12, 4)
+  piezasCaja          Decimal @default(0) @map("piezas_caja") @db.Decimal(10, 4)
+  // Flags
+  tipo                Int?    @db.SmallInt
+  tipoPromocion       Int     @default(0) @map("tipo_promocion") @db.SmallInt
+  enPromocion         Boolean @default(false) @map("en_promocion")
+  diasDuracion        Int     @default(0) @map("dias_duracion") @db.SmallInt
+  sinControlStock     Boolean @default(false) @map("sin_control_stock")
+  esProduccion        Boolean @default(false) @map("es_produccion")
+  foto                String? @db.VarChar(40)
+  archivoEtiqueta     String? @map("archivo_etiqueta") @db.VarChar(40)
+  fechaUltMov         DateTime? @map("fecha_ult_mov")
+  fechaIngreso        DateTime? @map("fecha_ingreso")
+  fechaUltCompra      DateTime? @map("fecha_ult_compra") @db.Date
+
+  // Relaciones
+  empresa             Empresa    @relation(fields: [codEmpresa], references: [codEmpresa])
+  rubro               Rubro?     @relation(fields: [codEmpresa, codRubro], references: [codEmpresa, codRubro])
+  familia             Familia?   @relation(fields: [codEmpresa, codFamilia], references: [codEmpresa, codFamilia])
+  subfamilia          Subfamilia? @relation(fields: [codEmpresa, codSubfamilia], references: [codEmpresa, codSubfamilia])
+  marca               Marca?     @relation(fields: [codMarca], references: [codMarca])
+  impuestoIva         Impuesto?  @relation("ProductoIva", fields: [codIva], references: [codImp])
+  impuestoIla         Impuesto?  @relation("ProductoIla", fields: [codImptoAdic1], references: [codImp])
+  codigosBarra        CodigoBarra[]
+  precios             Precio[]
+  bodegaStock         BodegaStock[]
+  detalleTransBalanza DetalleTransBalanza[]
+  detalleVentas       DetalleVenta[]
+  modStock            ModificacionStock[]
+  ingredientes        Ingrediente[]
+
+  @@id([codEmpresa, codArt])
+  @@index([codEmpresa, codBalanza], name: "idx_producto_balanza")
+  @@map("productos")
+}
+
+model CodigoBarra {
+  codEmpresa    Int    @map("cod_empresa") @db.SmallInt
+  codArt        Int    @map("cod_art")
+  codBarra      String @map("cod_barra") @db.VarChar(20)
+  codBarraReg   String? @map("cod_barra_reg") @db.VarChar(20)
+  codConsultor  String? @map("cod_consultor") @db.VarChar(20)
+
+  producto      Producto @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codArt, codBarra])
+  @@index([codEmpresa, codBarra], name: "idx_barra_busqueda")
+  @@map("codigosdebarra")
+}
+
+model ListaPrecios {
+  codEmpresa     Int    @map("cod_empresa") @db.SmallInt
+  codLista       Int    @map("cod_lista") @db.SmallInt
+  nombre         String? @db.VarChar(30)
+  rutClte        String? @map("rut_clte") @db.Char(10)
+  fechaImpresion DateTime? @map("fecha_impresion")
+
+  empresa        Empresa  @relation(fields: [codEmpresa], references: [codEmpresa])
+  precios        Precio[]
+  confPosVentas  ConfiPosVentas[]
+
+  @@id([codEmpresa, codLista])
+  @@map("listasprecios")
+}
+
+model Precio {
+  codEmpresa      Int     @map("cod_empresa") @db.SmallInt
+  codLista        Int     @map("cod_lista") @db.SmallInt
+  codArt          Int     @map("cod_art")
+  // Tramos de cantidad
+  unidad1         Decimal @default(0) @db.Decimal(12, 4)
+  unidad2         Decimal @default(0) @db.Decimal(12, 4)
+  unidad3         Decimal @default(0) @db.Decimal(12, 4)
+  // Precios netos
+  precio1         Decimal @default(0) @db.Decimal(15, 4)
+  precio2         Decimal @default(0) @db.Decimal(15, 4)
+  precio3         Decimal @default(0) @db.Decimal(15, 4)
+  // Precios con impuesto (precio venta público)
+  impPrecio1      Decimal @default(0) @map("imp_precio1") @db.Decimal(15, 4)
+  impPrecio2      Decimal @default(0) @map("imp_precio2") @db.Decimal(15, 4)
+  impPrecio3      Decimal @default(0) @map("imp_precio3") @db.Decimal(15, 4)
+  // Márgenes
+  margen1         Decimal @default(0) @db.Decimal(10, 4)
+  margen2         Decimal @default(0) @db.Decimal(10, 4)
+  margen3         Decimal @default(0) @db.Decimal(10, 4)
+  // Historial
+  precioAnt1      Decimal @default(0) @map("precio_ant1") @db.Decimal(15, 4)
+  impPrecioAnt1   Decimal @default(0) @map("imp_precio_ant1") @db.Decimal(15, 4)
+  fechaAct        DateTime? @map("fecha_act")
+  fechaActAnt     DateTime? @map("fecha_act_ant")
+
+  listaPrecios    ListaPrecios @relation(fields: [codEmpresa, codLista], references: [codEmpresa, codLista])
+  producto        Producto     @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codLista, codArt])
+  @@map("precios")
+}
+
+model BodegaStock {
+  codEmpresa          Int     @map("cod_empresa") @db.SmallInt
+  codSucursal         Int     @map("cod_sucursal") @db.SmallInt
+  codBodega           Int     @map("cod_bodega") @db.SmallInt
+  codArt              Int     @map("cod_art")
+  stock               Decimal @default(0) @db.Decimal(15, 4)
+  critico             Decimal @default(0) @db.Decimal(15, 4)
+  stockEnTransito     Decimal @default(0) @map("stock_en_transito") @db.Decimal(15, 4)
+  stockPedido         Decimal @default(0) @map("stock_pedido") @db.Decimal(15, 4)
+  stockComprometido   Decimal @default(0) @map("stock_comprometido") @db.Decimal(15, 4)
+  ubicacion           String? @db.VarChar(50)
+  periodo             String? @db.VarChar(10)
+  estado              Int     @default(1) @db.SmallInt
+
+  bodega              Bodega   @relation(fields: [codEmpresa, codSucursal, codBodega], references: [codEmpresa, codSucursal, codBodega])
+  producto            Producto @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codSucursal, codBodega, codArt])
+  @@index([codEmpresa, codSucursal, codArt], name: "idx_stock_busqueda")
+  @@map("bodegastock")
+}
+
+model ModificacionStock {
+  codEmpresa      Int       @map("cod_empresa") @db.SmallInt
+  codSucursal     Int       @map("cod_sucursal") @db.SmallInt
+  numId           BigInt    @map("num_id")
+  operacion       String?   @db.VarChar(30)
+  codEmpleado     Int?      @map("cod_empleado")
+  macHost         String?   @map("mac_host") @db.VarChar(100)
+  codArt          Int       @map("cod_art")
+  codBarra        String?   @map("cod_barra") @db.VarChar(20)
+  fecha           DateTime?
+  accion          Int       @db.SmallInt  // 1=Entrada, 2=Salida
+  descripcion     String?   @db.VarChar(80)
+  costo           Decimal   @default(0) @db.Decimal(15, 4)
+  precio          Decimal   @default(0) @db.Decimal(15, 4)
+  codBodega       Int?      @map("cod_bodega") @db.SmallInt
+  cantidad        Decimal   @default(0) @db.Decimal(15, 4)
+  stockAnterior   Decimal   @default(0) @map("stock_anterior") @db.Decimal(15, 4)
+  stockNuevo      Decimal   @default(0) @map("stock_nuevo") @db.Decimal(15, 4)
+
+  producto        Producto  @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codSucursal, numId])
+  @@map("modificaciondestock")
+}
+
+model Ingrediente {
+  codEmpresa  Int    @map("cod_empresa") @db.SmallInt
+  codArt      Int    @map("cod_art")
+  idIng       Int    @map("id_ing") @db.SmallInt
+  descripcion String? @db.Char(80)
+
+  producto    Producto @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codArt, idIng])
+  @@map("ingredientes")
+}
+
+// ============================================================
+// BALANZA — Transacciones de Pesa → QR
+// ============================================================
+
+model CabezalTransBalanza {
+  codEmpresa      Int       @map("cod_empresa") @db.SmallInt
+  codSucursal     Int       @map("cod_sucursal") @db.SmallInt
+  idTransaccion   BigInt    @map("id_transaccion")  // ← Va en el QR
+  nroBalanza      Int       @map("nro_balanza") @db.SmallInt
+  nroTransaccion  Int       @map("nro_transaccion")
+  codVendedor     Int       @map("cod_vendedor")
+  fechaTrans      DateTime  @map("fecha_trans")
+  nroItems        Int       @default(0) @map("nro_items") @db.SmallInt
+  monto           Decimal   @default(0) @db.Decimal(15, 4)
+  estado          String    @default("N") @db.Char(1)  // 'N'=Pendiente, 'S'=Procesado
+
+  vendedor        Personal  @relation(fields: [codEmpresa, codVendedor], references: [codEmpresa, codEmpleado])
+  detalles        DetalleTransBalanza[]
+
+  @@id([codEmpresa, codSucursal, idTransaccion, nroBalanza, nroTransaccion])
+  @@index([codEmpresa, codSucursal, idTransaccion, estado], name: "idx_trans_pendiente")
+  @@map("cabezaltransbalanza")
+}
+
+model DetalleTransBalanza {
+  codEmpresa      Int     @map("cod_empresa") @db.SmallInt
+  codSucursal     Int     @map("cod_sucursal") @db.SmallInt
+  idTransaccion   BigInt  @map("id_transaccion")
+  nroBalanza      Int     @map("nro_balanza") @db.SmallInt
+  nroTransaccion  Int     @map("nro_transaccion")
+  nroItem         Int     @map("nro_item") @db.SmallInt
+  codArt          Int     @map("cod_art")
+  cantidad        Decimal @default(0) @db.Decimal(12, 4)
+  precioUnitario  Decimal @default(0) @map("precio_unitario") @db.Decimal(15, 4)
+  totalPlu        Decimal @default(0) @map("total_plu") @db.Decimal(15, 4)
+
+  cabezal         CabezalTransBalanza @relation(
+    fields: [codEmpresa, codSucursal, idTransaccion, nroBalanza, nroTransaccion],
+    references: [codEmpresa, codSucursal, idTransaccion, nroBalanza, nroTransaccion]
+  )
+  producto        Producto @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codSucursal, idTransaccion, nroBalanza, nroTransaccion, nroItem])
+  @@map("detalletransbalanza")
+}
+
+// ============================================================
+// POS — Configuración / Ventas / Cierres
+// ============================================================
+
+model ConfiPos {
+  id            Int     @id @default(autoincrement()) @map("confipos_id")
+  codEmpresa    Int     @map("cod_empresa") @db.SmallInt
+  rutEmpresa    String  @map("rut_empresa") @db.Char(20)
+  codSucursal   Int     @map("cod_sucursal") @db.SmallInt
+  codCaja       Int     @map("cod_caja") @db.SmallInt
+  modulo        Int     @map("modulo") @db.SmallInt
+  hostname      String? @db.VarChar(40)
+  ip            String? @db.VarChar(20)
+  contrasena    String? @db.VarChar(40)
+  tipoDeBase    String? @map("tipo_de_base") @db.VarChar(40)
+  rutaLocal     String? @map("ruta_local") @db.VarChar(40)
+  tipoBdd       Int     @map("tipo_bdd") @db.SmallInt
+  userBdd       String? @map("user_bdd") @db.VarChar(20)
+  fecha         DateTime?
+
+  @@map("confipos")
+}
+
+model ConfiPosVentas {
+  id                      Int     @id @default(autoincrement()) @map("confiposventas_id")
+  codEmpresa              Int     @map("cod_empresa") @db.SmallInt
+  rutEmpresa              String  @map("rut_empresa") @db.Char(20)
+  codSucursal             Int     @map("cod_sucursal") @db.SmallInt
+  codBodega               Int     @map("cod_bodega") @db.SmallInt
+  activo                  Boolean @default(false)
+  codCaja                 Int     @map("cod_caja") @db.SmallInt
+  hostname                String? @db.VarChar(20)
+  codListaPrecios         Int     @map("cod_lista_precios") @db.SmallInt
+  tipoVenta               Int     @map("tipo_venta") @db.SmallInt
+  flagTickets             Int     @map("flag_tickets") @db.SmallInt
+  docPorDefecto           Int     @map("doc_por_defecto") @db.SmallInt  // 39=Boleta elec.
+  dctoMaximo              Int     @map("dcto_maximo") @db.SmallInt
+  aplicarRedondeo         Boolean @default(false) @map("aplicar_redondeo")
+  valorRedondeo           Int     @default(0) @map("valor_redondeo") @db.SmallInt
+  acumularProdXCodigo     Boolean @default(false) @map("acumular_prod_x_codigo")
+  fondoCaja               Decimal @default(0) @map("fondo_caja") @db.Decimal(15, 4)
+  maximoEnCaja            Decimal @default(0) @map("maximo_en_caja") @db.Decimal(15, 4)
+  verificarMonto          Boolean @default(false) @map("verificar_monto")
+  verificaVendedor        Boolean @default(false) @map("verifica_vendedor")
+  activarPromos           Boolean @default(false) @map("activar_promos")
+  tipoPantalla            Int     @default(0) @map("tipo_pantalla") @db.SmallInt
+
+  listaPrecios            ListaPrecios @relation(fields: [codEmpresa, codListaPrecios], references: [codEmpresa, codLista])
+
+  @@map("confiposventas")
+}
+
+model CabezalVenta {
+  codEmpresa          Int       @map("cod_empresa") @db.SmallInt
+  codSucursal         Int       @map("cod_sucursal") @db.SmallInt
+  tipoCargo           Int       @map("tipo_cargo")              // 39=Boleta, 33=Factura
+  nroCargo            BigInt    @map("nro_cargo")               // Folio
+  nroFiscal           BigInt    @default(0) @map("nro_fiscal")  // Folio SII
+  rutClte             String    @map("rut_clte") @db.Char(10)   // RUT cliente
+  codSucursalClte     Int       @default(0) @map("cod_sucursal_clte")
+  codCajero           Int       @map("cod_cajero")
+  codEmpleado         Int       @map("cod_empleado")
+  caja                Int?      @db.SmallInt
+  fechaEm             DateTime? @map("fecha_em")
+  monto               Decimal   @default(0) @db.Decimal(15, 4)
+  montoDescuento      Decimal   @default(0) @map("monto_descuento") @db.Decimal(15, 4)
+  montoImpuesto       Decimal   @default(0) @map("monto_impuesto") @db.Decimal(15, 4)
+  montoPendiente      Decimal   @default(0) @map("monto_pendiente") @db.Decimal(15, 4)
+  netoAfecto          Decimal   @default(0) @map("neto_afecto") @db.Decimal(15, 4)
+  netoExento          Decimal   @default(0) @map("neto_exento") @db.Decimal(15, 4)
+  anulada             Boolean   @default(false)
+  impresa             Boolean   @default(false)
+  tipoDeFactura       Int       @default(0) @map("tipo_de_factura") @db.SmallInt
+  pendiente           Boolean   @default(false)
+  // Cliente al paso (sin RUT)
+  clienteAlPaso       String?   @map("cliente_al_paso") @db.VarChar(40)
+  rutAlPaso           String?   @map("rut_al_paso") @db.VarChar(15)
+  // DTE
+  estadoDteEmision    Int?      @default(0) @map("estado_dte_emision") @db.SmallInt
+  informacionSiiEmision String? @map("informacion_sii_emision") @db.VarChar(1000)
+  macHost             String?   @map("mac_host") @db.VarChar(100)
+  fechaIngreso        DateTime? @map("fecha_ingreso")
+
+  empresa             Empresa  @relation(fields: [codEmpresa], references: [codEmpresa])
+  cajero              Personal @relation("VentaCajero",   fields: [codEmpresa, codCajero],   references: [codEmpresa, codEmpleado])
+  vendedor            Personal @relation("VentaVendedor", fields: [codEmpresa, codEmpleado],  references: [codEmpresa, codEmpleado])
+  detalles            DetalleVenta[]
+  xmlDte              XmlDte?
+
+  @@id([codEmpresa, codSucursal, tipoCargo, nroCargo])
+  @@index([codEmpresa, codSucursal, caja], name: "idx_venta_caja")
+  @@index([codEmpresa, fechaEm], name: "idx_venta_fecha")
+  @@map("cabezalventas")
+}
+
+model DetalleVenta {
+  codEmpresa          Int       @map("cod_empresa") @db.SmallInt
+  codSucursal         Int       @map("cod_sucursal") @db.SmallInt
+  codSucursalMov      Int       @map("cod_sucursal_mov") @db.SmallInt
+  codBodega           Int       @map("cod_bodega") @db.SmallInt
+  tipo                Int?
+  tipoDeFactura       Int?      @map("tipo_de_factura")
+  numero              BigInt
+  rutClte             String    @map("rut_clte") @db.Char(10)
+  codEmpleado         Int       @map("cod_empleado")
+  caja                Int?      @db.SmallInt
+  nroItem             Int       @map("nro_item") @db.SmallInt
+  codArt              Int       @map("cod_art")
+  codBarra            String?   @map("cod_barra") @db.VarChar(20)
+  descripcion         String?   @db.VarChar(80)
+  costo               Decimal   @default(0) @db.Decimal(15, 4)
+  precioUnitario      Decimal   @default(0) @map("precio_unitario") @db.Decimal(15, 4)
+  precioVentaPublico  Decimal   @default(0) @map("precio_venta_publico") @db.Decimal(15, 4)
+  cantidad            Decimal   @default(0) @db.Decimal(15, 4)
+  descuento           Decimal   @default(0) @db.Decimal(10, 4)
+  iva                 Decimal   @default(0) @db.Decimal(8, 4)
+  margen              Decimal   @default(0) @db.Decimal(12, 4)
+  actualizaStock      Boolean   @default(false) @map("actualiza_stock")
+  fecha               DateTime
+
+  cabezal             CabezalVenta @relation(
+    fields: [codEmpresa, codSucursal, tipo, numero],
+    references: [codEmpresa, codSucursal, tipoCargo, nroCargo]
+  )
+  producto            Producto @relation(fields: [codEmpresa, codArt], references: [codEmpresa, codArt])
+
+  @@id([codEmpresa, codSucursal, tipo, numero, nroItem, codArt])
+  @@map("detalleventas")
+}
+
+// ============================================================
+// ERP — Clientes / Compras / Cotizaciones
+// ============================================================
+
+model CondicionPago {
+  codigo       Int     @id @db.SmallInt
+  descripcion  String? @db.VarChar(30)
+  dias         Int     @default(0) @db.SmallInt
+  tipo         Int     @default(1) @db.SmallInt  // 1=crédito, 2=contado
+
+  @@map("condicionesdepago")
+}
+
+model Moneda {
+  codMon      Int     @id @map("cod_mon") @db.SmallInt
+  nombre      String? @db.VarChar(20)
+  simbolo     String? @db.Char(5)
+  tasaCambio  Decimal @default(1) @map("tasa_cambio") @db.Decimal(15, 4)
+
+  @@map("monedas")
+}
+
+model Banco {
+  codBanco  Int     @id @map("cod_banco") @db.SmallInt
+  nombre    String? @db.Char(40)
+
+  @@map("bancos")
+}
+
+model Cliente {
+  codEmpresa        Int     @map("cod_empresa") @db.SmallInt
+  rut               String  @db.VarChar(10)
+  codSucursalClte   Int     @default(0) @map("cod_sucursal_clte")
+  nombre            String? @db.VarChar(40)
+  nombre2           String? @db.VarChar(40)
+  direccion         String? @db.VarChar(80)
+  telefono          String? @db.Char(30)
+  email             String? @db.VarChar(40)
+  codPais           Int     @default(0) @map("cod_pais") @db.SmallInt
+  codCiudad         Int     @default(0) @map("cod_ciudad") @db.SmallInt
+  codComuna         Int     @default(0) @map("cod_comuna") @db.SmallInt
+  esPersona         Boolean @default(false) @map("es_persona")
+  giro              String? @db.VarChar(80)
+  condPago          Int     @default(0) @map("cond_pago") @db.SmallInt
+  creditoMaximo     Decimal @default(0) @map("credito_maximo") @db.Decimal(15, 4)
+  montoUtilizado    Decimal @default(0) @map("monto_utilizado") @db.Decimal(15, 4)
+  bloqueo           Int     @default(0) @db.SmallInt
+  codLista          Int     @default(0) @map("cod_lista") @db.SmallInt
+  estado            Int     @default(1) @db.SmallInt  // 1=activo
+
+  @@id([codEmpresa, rut])
+  @@map("clientes")
+}
+
+model CabezalCompra {
+  codEmpresa        Int       @map("cod_empresa") @db.SmallInt
+  codSucursal       Int       @map("cod_sucursal") @db.SmallInt
+  tipoCargo         Int       @map("tipo_cargo") @db.SmallInt
+  nroCargo          BigInt    @map("nro_cargo")
+  rutClte           String    @map("rut_clte") @db.Char(10)  // RUT proveedor
+  estado            Int?      @default(0) @db.SmallInt
+  fechaEm           DateTime? @map("fecha_em")
+  fechaVen          DateTime? @map("fecha_ven")
+  monto             Decimal   @default(0) @db.Decimal(15, 4)
+  montoDescuento    Decimal   @default(0) @map("monto_descuento") @db.Decimal(15, 4)
+  montoImpuesto     Decimal   @default(0) @map("monto_impuesto") @db.Decimal(15, 4)
+  netoAfecto        Decimal   @default(0) @map("neto_afecto") @db.Decimal(15, 4)
+  netoExento        Decimal   @default(0) @map("neto_exento") @db.Decimal(15, 4)
+  anulada           Boolean   @default(false)
+  impresa           Boolean   @default(false)
+  pendiente         Boolean   @default(true)
+  ordenCompra       String?   @map("orden_compra") @db.Char(20)
+  observaciones     String?   @db.Text
+
+  empresa           Empresa  @relation(fields: [codEmpresa], references: [codEmpresa])
+  detalles          DetalleCompra[]
+
+  @@id([codEmpresa, codSucursal, tipoCargo, nroCargo, rutClte])
+  @@index([codEmpresa, codSucursal, fechaEm], name: "idx_compra_fecha")
+  @@map("cabezalcompras")
+}
+
+model DetalleCompra {
+  codEmpresa          Int       @map("cod_empresa") @db.SmallInt
+  codSucursal         Int       @map("cod_sucursal") @db.SmallInt
+  tipo                Int       @db.SmallInt
+  numero              BigInt
+  rutClte             String    @map("rut_clte") @db.Char(10)
+  nroItem             Int       @map("nro_item") @db.SmallInt
+  codArt              Int       @map("cod_art")
+  descripcion         String?   @db.VarChar(80)
+  cantidad            Decimal   @default(0) @db.Decimal(15, 4)
+  precioUnitario      Decimal   @default(0) @map("precio_unitario") @db.Decimal(15, 4)
+  costo               Decimal   @default(0) @db.Decimal(15, 4)
+  iva                 Decimal   @default(0) @db.Decimal(8, 4)
+  descuento           Decimal   @default(0) @db.Decimal(10, 4)
+  actualizaStock      Boolean   @default(false) @map("actualiza_stock")
+  fecha               DateTime?
+
+  cabezal             CabezalCompra @relation(
+    fields: [codEmpresa, codSucursal, tipo, numero, rutClte],
+    references: [codEmpresa, codSucursal, tipoCargo, nroCargo, rutClte]
+  )
+
+  @@id([codEmpresa, codSucursal, tipo, numero, rutClte, nroItem, codArt])
+  @@map("detallecompras")
+}
+
+// ============================================================
+// DTE — Facturación Electrónica SII Chile
+// ============================================================
+
+model Caf {
+  id                  Int       @id @default(autoincrement()) @map("caf_id")
+  codEmpresa          Int       @map("cod_empresa") @db.SmallInt
+  tipoDoc             Int       @map("tipo_doc") @db.SmallInt     // 33=Factura, 39=Boleta, 41=Boleta exenta
+  caja                Int       @default(1) @db.SmallInt
+  desde               Int       @default(0)                       // Folio inicial
+  hasta               Int       @default(0)                       // Folio final
+  proximoNumero       Int       @default(0) @map("proximo_numero") // Siguiente a usar
+  cantidadLimite      Int       @default(0) @map("cantidad_limite") // Alerta al llegar aquí
+  cantidadABajar      Int       @default(0) @map("cantidad_a_bajar")
+  activo              Boolean   @default(false)
+  anuladosDesde       Int       @default(0) @map("anulados_desde")
+  anuladosHasta       Int       @default(0) @map("anulados_hasta")
+  fechaCarga          DateTime? @map("fecha_carga")
+  fechaVencimiento    DateTime? @map("fecha_vencimiento")
+  fechaCaf            DateTime? @map("fecha_caf")
+  archivoCaf          String?   @map("archivo_caf") @db.Text      // XML CAF firmado
+  enServidor          Boolean   @default(false) @map("en_servidor")
+
+  empresa             Empresa  @relation(fields: [codEmpresa], references: [codEmpresa])
+
+  @@map("caf")
+}
+
+model XmlDte {
+  id                Int       @id @default(autoincrement()) @map("xmldte_id")
+  codEmpresa        Int       @map("cod_empresa") @db.SmallInt
+  codSucursal       Int       @map("cod_sucursal") @db.SmallInt
+  tipoDoc           Int       @map("tipo_doc") @db.SmallInt
+  folio             BigInt
+  rutClte           String?   @map("rut_clte") @db.VarChar(15)
+  xml               String?   @db.Text
+  xmlFirmado        String?   @map("xml_firmado") @db.Text
+  timbre            String?   @db.Text
+  enServidor        Boolean   @default(false) @map("en_servidor")  // 0=pendiente, 1=enviado
+  fechaTimbrado     DateTime? @map("fecha_timbrado")
+  nombreMaquina     String?   @map("nombre_maquina") @db.VarChar(100)
+  verPdf            Boolean   @default(false) @map("ver_pdf")
+
+  venta             CabezalVenta? @relation(
+    fields: [codEmpresa, codSucursal, tipoDoc, folio],
+    references: [codEmpresa, codSucursal, tipoCargo, nroCargo]
+  )
+
+  @@map("xmldte")
+}
+
+model XmlBoleta {
+  id                Int       @id @default(autoincrement()) @map("xmlboletas_id")
+  codEmpresa        Int       @map("cod_empresa") @db.SmallInt
+  codSucursal       Int       @map("cod_sucursal") @db.SmallInt
+  tipoDoc           Int       @map("tipo_doc") @db.SmallInt
+  folio             BigInt
+  xml               String?   @db.Text
+  xmlFirmado        String?   @map("xml_firmado") @db.Text
+  timbre            String?   @db.Text
+  enServidor        Boolean   @default(false) @map("en_servidor")
+  fechaTimbrado     DateTime? @map("fecha_timbrado")
+  nombreMaquina     String?   @map("nombre_maquina") @db.VarChar(100)
+  verPdf            Boolean   @default(false) @map("ver_pdf")
+
+  @@map("xmlboletas")
+}
+
+// ============================================================
+// PROMOCIONES
+// ============================================================
+
+model Promocion {
+  codEmpresa    Int       @map("cod_empresa") @db.SmallInt
+  codSucursal   Int       @map("cod_sucursal") @db.SmallInt
+  numId         Int       @id @default(autoincrement()) @map("num_id")
+  descripcion   String?   @db.VarChar(40)
+  tipo          Int?      @db.SmallInt
+  fechaInicio   DateTime? @map("fecha_inicio")
+  fechaFin      DateTime? @map("fecha_fin")
+  estado        Int       @default(1) @db.SmallInt
+
+  productos     PromocionProducto[]
+
+  @@map("promociones")
+}
+
+model PromocionProducto {
+  idPromo         Int     @map("id_promo")
+  codArt          Int     @map("cod_art")
+  tipoDescuento   Int?    @map("tipo_descuento") @db.SmallInt
+  valorDescuento  Decimal @default(0) @map("valor_descuento") @db.Decimal(15, 4)
+
+  promocion       Promocion @relation(fields: [idPromo], references: [numId])
+
+  @@id([idPromo, codArt])
+  @@map("promocionesproductos")
+}

@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OptiMind — Demo de Interfaces</title>
+  <!-- marker: v2-dashboard -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-btn { transition: all .15s; }
+    .tab-btn.active { border-bottom: 3px solid #3b82f6; }
+    .screen { display: none; }
+    .screen.active { display: flex; }
+    .module-nav button { transition: background .15s; }
+    .badge-new { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    input:focus { outline: none; }
+    select:focus { outline: none; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- ═══════════════════════════════════════════════════
+     BARRA DE NAVEGACIÓN DE MÓDULOS (selector de app)
+════════════════════════════════════════════════════ -->
+<div class="bg-white border-b shadow-sm sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
+    <span class="font-black text-blue-700 text-lg mr-4 tracking-tight">OptiMind</span>
+    <span class="text-gray-300 mr-2 text-sm">Demo de interfaces</span>
+    <div class="flex gap-1 ml-2">
+      <button onclick="showModule('balanza')" id="nav-balanza"
+        class="module-nav-btn px-4 py-1.5 rounded text-sm font-medium bg-gray-900 text-white">
+        ⚖️ Balanza
+      </button>
+      <button onclick="showModule('pos')" id="nav-pos"
+        class="module-nav-btn px-4 py-1.5 rounded text-sm font-medium text-gray-600 hover:bg-gray-100">
+        🏪 POS Caja
+      </button>
+      <button onclick="showModule('erp')" id="nav-erp"
+        class="module-nav-btn px-4 py-1.5 rounded text-sm font-medium text-gray-600 hover:bg-gray-100">
+        📊 ERP
+      </button>
+    </div>
+    <span class="ml-auto flex items-center gap-3">
+      <span class="text-xs text-gray-400">Puerto: <span id="puerto-label" class="font-mono">3001/5173</span></span>
+      <a href="http://localhost:5678" target="_blank"
+        id="n8n-badge"
+        title="Abrir n8n (automatizaciones)"
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors cursor-pointer">
+        <span id="n8n-dot" class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+        <span>n8n</span>
+        <span id="n8n-status-text" class="font-normal text-orange-500">verificando…</span>
+      </a>
+    </span>
+  </div>
+</div>
+
+<!-- ═══════════════════════
+     MÓDULO: BALANZA
+════════════════════════ -->
+<div id="module-balanza" class="module-screen">
+
+  <!-- Pantalla: Escaneo + Carrito -->
+  <div id="balanza-scan" class="screen active min-h-[calc(100vh-48px)] bg-gray-900 p-4 flex gap-4">
+
+    <!-- Panel izquierdo: escaneo -->
+    <div class="w-1/2 space-y-4">
+      <div class="flex justify-between items-center">
+        <h1 class="text-xl font-bold text-blue-400">Balanza — María González</h1>
+        <button class="text-gray-500 hover:text-white text-sm">Salir</button>
+      </div>
+
+      <!-- Input código de barra -->
+      <div class="bg-gray-800 rounded-xl p-4 space-y-3">
+        <label class="text-sm text-gray-400">Código de barra</label>
+        <input id="barra-input" type="text" value=""
+          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg focus:border-blue-500 border-2"
+          placeholder="Escanear o escribir código..." />
+        <button onclick="buscarProducto()"
+          class="w-full bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg text-sm">
+          Buscar
+        </button>
+      </div>
+
+      <!-- Producto encontrado (oculto por defecto) -->
+      <div id="producto-card" class="hidden bg-gray-800 border-2 border-blue-600 rounded-xl p-4 space-y-3">
+        <h3 id="prod-nombre" class="font-bold text-lg text-white">Leche Entera 1L</h3>
+        <p id="prod-precio" class="text-2xl font-bold text-green-400">$1.290</p>
+        <p class="text-gray-400 text-sm">por UN</p>
+        <label class="block text-sm text-gray-300">Cantidad:</label>
+        <input id="prod-cantidad" type="number" value="1" min="0.001" step="1"
+          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-lg" />
+        <p id="prod-total" class="text-xl text-yellow-400 font-semibold">Total: $1.290</p>
+        <button onclick="agregarItem()"
+          class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-lg">
+          + Agregar
+        </button>
+      </div>
+
+      <!-- Error -->
+      <div id="barra-error" class="hidden bg-red-900/50 border border-red-600 rounded-lg p-3 text-red-300 text-sm">
+        Producto no encontrado
+      </div>
+
+      <!-- Ayuda rápida -->
+      <div class="bg-gray-800/50 rounded-xl p-4 text-xs text-gray-500 space-y-1">
+        <p class="text-gray-400 font-medium mb-2">Prueba estos códigos de barras:</p>
+        <p>• <button onclick="simBarra('7801234000012')" class="text-blue-400 hover:underline font-mono">7801234000012</button> → Leche Entera 1L</p>
+        <p>• <button onclick="simBarra('7802100010012')" class="text-blue-400 hover:underline font-mono">7802100010012</button> → Azúcar 1kg</p>
+        <p>• <button onclick="simBarra('7801640042261')" class="text-blue-400 hover:underline font-mono">7801640042261</button> → Aceite Vegetal 900ml</p>
+        <p>• <button onclick="simBarra('9999')" class="text-blue-400 hover:underline font-mono">9999</button> → No encontrado</p>
+      </div>
+    </div>
+
+    <!-- Panel derecho: carrito -->
+    <div class="w-1/2 flex flex-col">
+      <div class="bg-gray-800 rounded-xl p-4 flex-1 flex flex-col">
+        <h2 class="text-lg font-semibold text-gray-300 mb-3">
+          Productos (<span id="cart-count">0</span>)
+        </h2>
+
+        <div id="cart-items" class="flex-1 overflow-y-auto space-y-2 max-h-[50vh]">
+          <p id="cart-empty" class="text-gray-500 text-center mt-8">Sin productos aún</p>
+        </div>
+
+        <div class="border-t border-gray-700 pt-4 mt-4">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-gray-300 text-lg">TOTAL</span>
+            <span id="cart-total" class="text-white text-3xl font-bold">$0</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="cancelarBalanza()"
+              class="bg-red-700 hover:bg-red-600 text-white font-semibold py-3 rounded-lg">
+              Cancelar
+            </button>
+            <button id="btn-generar-qr" onclick="generarQr()" disabled
+              class="bg-blue-900 text-blue-400 font-bold py-3 rounded-lg text-lg cursor-not-allowed"
+              title="Agrega al menos un producto">
+              Generar QR
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla: QR generado -->
+  <div id="balanza-qr" class="screen min-h-[calc(100vh-48px)] bg-gray-900 flex-col items-center justify-center p-6">
+    <h2 class="text-2xl font-bold text-green-400 mb-2">QR Generado</h2>
+    <p class="text-gray-400 mb-6">El cliente puede ir a la caja</p>
+    <!-- QR real generado con API pública -->
+    <div class="bg-white p-3 rounded-xl w-64 h-64 flex items-center justify-center">
+      <img id="qr-img" src="" alt="QR" class="w-full h-full" />
+    </div>
+    <p id="qr-monto" class="text-3xl font-bold text-white mt-4"></p>
+    <p id="qr-items" class="text-gray-400 text-sm mt-1"></p>
+    <button onclick="nuevaVentaBalanza()"
+      class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg">
+      Nueva Venta
+    </button>
+  </div>
+
+</div><!-- /module-balanza -->
+
+
+<!-- ═══════════════════════
+     MÓDULO: POS CAJA
+════════════════════════ -->
+<div id="module-pos" class="module-screen hidden">
+
+  <!-- Pantalla: Esperando QR -->
+  <div id="pos-esperando" class="screen active min-h-[calc(100vh-48px)] bg-gray-950 flex-col items-center justify-center p-8">
+    <div class="flex justify-between w-full max-w-lg mb-8">
+      <h1 class="text-xl font-bold text-green-400">OptiMind POS — Carlos Pérez</h1>
+      <button class="text-gray-500 hover:text-white text-sm">Salir</button>
+    </div>
+    <div class="bg-gray-800 rounded-2xl p-8 w-full max-w-lg text-center space-y-6">
+      <div class="text-6xl">📷</div>
+      <h2 class="text-2xl font-bold text-white">Esperando QR de balanza</h2>
+      <p class="text-gray-400">Escanee el código QR del cliente</p>
+      <input id="qr-scan-input" type="text" placeholder="Escaneando QR..."
+        class="w-full bg-gray-700 rounded-lg px-4 py-3 text-white text-lg text-center focus:border-green-500 border border-gray-600" />
+      <p id="pos-error" class="hidden text-red-400 text-sm"></p>
+      <button onclick="simularLecturaQr()"
+        class="w-full bg-green-700 hover:bg-green-600 text-white py-2 rounded-lg text-sm">
+        Simular escaneo de QR →
+      </button>
+    </div>
+  </div>
+
+  <!-- Pantalla: Mostrando venta -->
+  <div id="pos-venta" class="screen min-h-[calc(100vh-48px)] bg-gray-950 p-6 gap-6">
+    <!-- Items -->
+    <div class="flex-1 bg-gray-800 rounded-2xl p-6">
+      <h2 class="text-lg font-semibold text-gray-300 mb-4">Productos (3)</h2>
+      <div class="space-y-2">
+        <div class="bg-gray-700 rounded-lg p-3 flex justify-between items-center">
+          <div>
+            <p class="text-white font-medium">Leche Entera 1L</p>
+            <p class="text-gray-400 text-sm">2 UN × $1.290</p>
+          </div>
+          <p class="text-green-400 font-bold text-lg">$2.580</p>
+        </div>
+        <div class="bg-gray-700 rounded-lg p-3 flex justify-between items-center">
+          <div>
+            <p class="text-white font-medium">Azúcar 1kg</p>
+            <p class="text-gray-400 text-sm">1 KG × $890</p>
+          </div>
+          <p class="text-green-400 font-bold text-lg">$890</p>
+        </div>
+        <div class="bg-gray-700 rounded-lg p-3 flex justify-between items-center">
+          <div>
+            <p class="text-white font-medium">Aceite Vegetal 900ml</p>
+            <p class="text-gray-400 text-sm">1 UN × $2.490</p>
+          </div>
+          <p class="text-green-400 font-bold text-lg">$2.490</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel cobro -->
+    <div class="w-72 flex flex-col gap-4">
+      <div class="bg-gray-800 rounded-2xl p-6 space-y-4">
+        <h3 class="text-gray-400 text-sm">Tipo documento</h3>
+        <select class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white border border-gray-600">
+          <option>Boleta Electrónica</option>
+          <option>Factura Afecta</option>
+          <option>Boleta No Afecta</option>
+        </select>
+        <div class="border-t border-gray-700 pt-4">
+          <p class="text-gray-400 text-sm">TOTAL</p>
+          <p class="text-white text-4xl font-bold mt-1">$5.960</p>
+        </div>
+      </div>
+      <button onclick="confirmarVenta()"
+        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl">
+        ✓ Cobrar
+      </button>
+      <button onclick="cancelarVenta()"
+        class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- Pantalla: Venta confirmada -->
+  <div id="pos-confirmada" class="screen min-h-[calc(100vh-48px)] bg-gray-950 flex-col items-center justify-center gap-6">
+    <div class="text-7xl">✅</div>
+    <h2 class="text-3xl font-bold text-green-400">Venta Registrada</h2>
+    <p class="text-gray-400 text-lg">Boleta electrónica #2847</p>
+    <p class="text-white text-5xl font-bold">$5.960</p>
+    <button onclick="nuevaVentaPos()"
+      class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold px-10 py-4 rounded-xl text-xl">
+      Nueva Venta
+    </button>
+  </div>
+
+</div><!-- /module-pos -->
+
+
+<!-- ═══════════════════════
+     MÓDULO: ERP
+════════════════════════ -->
+<div id="module-erp" class="module-screen hidden">
+  <div class="min-h-[calc(100vh-48px)] flex flex-col">
+
+    <!-- Nav ERP -->
+    <nav class="bg-blue-800 text-white shadow">
+      <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+        <div class="flex items-center gap-1">
+          <div class="flex flex-col leading-tight mr-4">
+            <span class="font-black text-base tracking-tight">OptiMind</span>
+            <span class="text-blue-300 text-xs leading-none">Emporio Doña Esperanza</span>
+          </div>
+          <button onclick="erpTab('dashboard')" id="erp-nav-dashboard"
+            class="erp-nav-btn px-4 py-2 rounded text-sm font-medium bg-blue-700 text-white">Dashboard</button>
+          <button onclick="erpTab('productos')" id="erp-nav-productos"
+            class="erp-nav-btn px-4 py-2 rounded text-sm font-medium text-blue-100 hover:bg-blue-700">Productos</button>
+          <button onclick="erpTab('ventas')" id="erp-nav-ventas"
+            class="erp-nav-btn px-4 py-2 rounded text-sm font-medium text-blue-100 hover:bg-blue-700">Ventas</button>
+          <button onclick="erpTab('compras')" id="erp-nav-compras"
+            class="erp-nav-btn px-4 py-2 rounded text-sm font-medium text-blue-100 hover:bg-blue-700">Compras</button>
+          <button onclick="erpTab('inventario')" id="erp-nav-inventario"
+            class="erp-nav-btn px-4 py-2 rounded text-sm font-medium text-blue-100 hover:bg-blue-700">Inventario</button>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="text-blue-200">Admin Principal</span>
+          <button class="text-blue-300 hover:text-white">Salir</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Contenido ERP -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+
+      <!-- TAB: Dashboard -->
+      <div id="erp-dashboard" class="erp-tab space-y-6">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold">Dashboard</h1>
+          <span class="text-xs text-gray-400" id="dash-hora"></span>
+        </div>
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Ventas hoy</p>
+            <p class="text-3xl font-bold mt-1">$42.780</p>
+            <p class="text-sm text-gray-500 mt-1">17 doc.</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 border-l-4 border-indigo-500">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Esta semana</p>
+            <p class="text-3xl font-bold mt-1">$194.200</p>
+            <p class="text-sm text-gray-500 mt-1">83 doc.</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 border-l-4 border-purple-500">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Este mes</p>
+            <p class="text-3xl font-bold mt-1">$1.247.430</p>
+            <span class="text-xs px-2 py-0.5 rounded-full mt-2 inline-block font-medium bg-green-100 text-green-700">+12.4% vs mes ant.</span>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Ticket promedio</p>
+            <p class="text-3xl font-bold mt-1">$4.890</p>
+            <p class="text-sm text-gray-500 mt-1">mes actual</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 border-l-4 border-red-500">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Stock crítico</p>
+            <p class="text-3xl font-bold mt-1 text-red-600">3</p>
+            <p class="text-sm text-gray-500 mt-1">productos bajo mínimo</p>
+          </div>
+        </div>
+        <!-- Gráficos fila 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="font-semibold text-gray-700 mb-4">Ventas — últimos 14 días</h2>
+            <svg viewBox="0 0 100 60" class="w-full h-28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <polygon points="0,60 0,54 7.7,51 15.4,48 23.1,50 30.8,42 38.5,44 46.2,35 53.8,37 61.5,26 69.2,30 76.9,20 84.6,14 92.3,10 100,8 100,60" fill="url(#g1)"/>
+              <polyline points="0,54 7.7,51 15.4,48 23.1,50 30.8,42 38.5,44 46.2,35 53.8,37 61.5,26 69.2,30 76.9,20 84.6,14 92.3,10 100,8"
+                fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="flex justify-between text-xs text-gray-400 mt-1"><span>27/03</span><span>09/04</span></div>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="font-semibold text-gray-700 mb-4">Ventas por hora — hoy</h2>
+            <div id="horas-chart" class="space-y-1.5"></div>
+          </div>
+        </div>
+        <!-- Gráficos fila 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="font-semibold text-gray-700 mb-4">Top 10 productos — este mes</h2>
+            <div id="top-chart" class="space-y-2"></div>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="font-semibold text-gray-700 mb-4">Últimas ventas</h2>
+            <div class="divide-y">
+              <div class="flex items-center justify-between py-2.5"><div class="flex items-center gap-3"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Boleta</span><div><p class="text-sm font-medium">#2848</p><p class="text-xs text-gray-400">Carlos · 17:52</p></div></div><span class="font-semibold text-sm">$5.827</span></div>
+              <div class="flex items-center justify-between py-2.5"><div class="flex items-center gap-3"><span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Factura</span><div><p class="text-sm font-medium">#152</p><p class="text-xs text-gray-400">Carlos · 17:21</p></div></div><span class="font-semibold text-sm">$18.750</span></div>
+              <div class="flex items-center justify-between py-2.5"><div class="flex items-center gap-3"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Boleta</span><div><p class="text-sm font-medium">#2847</p><p class="text-xs text-gray-400">Carlos · 16:55</p></div></div><span class="font-semibold text-sm">$12.390</span></div>
+              <div class="flex items-center justify-between py-2.5"><div class="flex items-center gap-3"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Boleta</span><div><p class="text-sm font-medium">#2846</p><p class="text-xs text-gray-400">María · 16:30</p></div></div><span class="font-semibold text-sm">$3.490</span></div>
+              <div class="flex items-center justify-between py-2.5"><div class="flex items-center gap-3"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Boleta</span><div><p class="text-sm font-medium">#2845</p><p class="text-xs text-gray-400">María · 16:12</p></div></div><span class="font-semibold text-sm">$2.290</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Productos -->
+      <div id="erp-productos" class="erp-tab hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold">Productos</h1>
+          <span class="text-sm text-gray-500">1.247 productos</span>
+        </div>
+        <input type="text" placeholder="Buscar por descripción o código de barras..."
+          class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" />
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-left px-4 py-2 border-b">Código</th>
+                <th class="text-left px-4 py-2 border-b">Descripción</th>
+                <th class="text-right px-4 py-2 border-b">Stock</th>
+                <th class="text-right px-4 py-2 border-b">Stock crít.</th>
+                <th class="text-right px-4 py-2 border-b">Precio público</th>
+                <th class="text-right px-4 py-2 border-b">Precio neto</th>
+                <th class="text-center px-4 py-2 border-b">IVA</th>
+                <th class="text-center px-4 py-2 border-b">Estado</th>
+                <th class="text-center px-4 py-2 border-b">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b font-mono text-xs">1</td>
+                <td class="px-4 py-2 border-b">
+                  <div>Leche Entera 1L</div>
+                  <div class="text-xs text-gray-400">7801234000012</div>
+                </td>
+                <td class="px-4 py-2 border-b text-right font-medium">48 UN</td>
+                <td class="px-4 py-2 border-b text-right text-gray-500">20</td>
+                <td class="px-4 py-2 border-b text-right">$1.290</td>
+                <td class="px-4 py-2 border-b text-right text-gray-600">$1.084</td>
+                <td class="px-4 py-2 border-b text-center">19%</td>
+                <td class="px-4 py-2 border-b text-center">
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+                </td>
+                <td class="px-4 py-2 border-b text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="openModal('modal-precio')" class="text-blue-600 hover:underline text-xs">Precio</button>
+                    <button onclick="openModal('modal-stock')" class="text-orange-600 hover:underline text-xs">Stock</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50 bg-red-50">
+                <td class="px-4 py-2 border-b font-mono text-xs">2</td>
+                <td class="px-4 py-2 border-b">
+                  <div>Azúcar 1kg</div>
+                  <div class="text-xs text-gray-400">7802100010012</div>
+                </td>
+                <td class="px-4 py-2 border-b text-right font-medium text-red-600">3 KG</td>
+                <td class="px-4 py-2 border-b text-right text-gray-500">10</td>
+                <td class="px-4 py-2 border-b text-right">$890</td>
+                <td class="px-4 py-2 border-b text-right text-gray-600">$748</td>
+                <td class="px-4 py-2 border-b text-center">19%</td>
+                <td class="px-4 py-2 border-b text-center">
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+                </td>
+                <td class="px-4 py-2 border-b text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="openModal('modal-precio')" class="text-blue-600 hover:underline text-xs">Precio</button>
+                    <button onclick="openModal('modal-stock')" class="text-orange-600 hover:underline text-xs">Stock</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b font-mono text-xs">3</td>
+                <td class="px-4 py-2 border-b">
+                  <div>Aceite Vegetal 900ml</div>
+                  <div class="text-xs text-gray-400">7801640042261</div>
+                </td>
+                <td class="px-4 py-2 border-b text-right font-medium">22 UN</td>
+                <td class="px-4 py-2 border-b text-right text-gray-500">5</td>
+                <td class="px-4 py-2 border-b text-right">$2.490</td>
+                <td class="px-4 py-2 border-b text-right text-gray-600">$2.092</td>
+                <td class="px-4 py-2 border-b text-center">19%</td>
+                <td class="px-4 py-2 border-b text-center">
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+                </td>
+                <td class="px-4 py-2 border-b text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="openModal('modal-precio')" class="text-blue-600 hover:underline text-xs">Precio</button>
+                    <button onclick="openModal('modal-stock')" class="text-orange-600 hover:underline text-xs">Stock</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b font-mono text-xs">4</td>
+                <td class="px-4 py-2 border-b">
+                  <div>Pan Marraqueta (kg)</div>
+                  <div class="text-xs text-gray-400">2000001</div>
+                </td>
+                <td class="px-4 py-2 border-b text-right font-medium">12.5 KG</td>
+                <td class="px-4 py-2 border-b text-right text-gray-500">3</td>
+                <td class="px-4 py-2 border-b text-right">$1.800</td>
+                <td class="px-4 py-2 border-b text-right text-gray-600">$1.513</td>
+                <td class="px-4 py-2 border-b text-center">19%</td>
+                <td class="px-4 py-2 border-b text-center">
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+                </td>
+                <td class="px-4 py-2 border-b text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="openModal('modal-precio')" class="text-blue-600 hover:underline text-xs">Precio</button>
+                    <button onclick="openModal('modal-stock')" class="text-orange-600 hover:underline text-xs">Stock</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b font-mono text-xs">5</td>
+                <td class="px-4 py-2 border-b">
+                  <div>Detergente Líq. 3L</div>
+                  <div class="text-xs text-gray-400">7804670000245</div>
+                </td>
+                <td class="px-4 py-2 border-b text-right font-medium">8 UN</td>
+                <td class="px-4 py-2 border-b text-right text-gray-500">4</td>
+                <td class="px-4 py-2 border-b text-right">$4.990</td>
+                <td class="px-4 py-2 border-b text-right text-gray-600">$4.193</td>
+                <td class="px-4 py-2 border-b text-center">19%</td>
+                <td class="px-4 py-2 border-b text-center">
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+                </td>
+                <td class="px-4 py-2 border-b text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="openModal('modal-precio')" class="text-blue-600 hover:underline text-xs">Precio</button>
+                    <button onclick="openModal('modal-stock')" class="text-orange-600 hover:underline text-xs">Stock</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-center gap-2 text-sm">
+          <button class="px-3 py-1 border rounded hover:bg-gray-100 opacity-40">‹</button>
+          <span>Pág. 1 / 25</span>
+          <button class="px-3 py-1 border rounded hover:bg-gray-100">›</button>
+        </div>
+      </div>
+
+      <!-- TAB: Ventas -->
+      <div id="erp-ventas" class="erp-tab hidden space-y-6">
+        <h1 class="text-2xl font-bold">Ventas</h1>
+        <div class="flex items-end gap-3 bg-white p-4 rounded-lg shadow">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Desde</label>
+            <input type="date" value="2026-04-09" class="border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Hasta</label>
+            <input type="date" value="2026-04-09" class="border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Consultar</button>
+        </div>
+        <!-- Resumen -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total vendido</p>
+            <p class="text-2xl font-bold mt-1 text-blue-700">$127.430</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Documentos</p>
+            <p class="text-2xl font-bold mt-1">43</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Boletas</p>
+            <p class="text-2xl font-bold mt-1 text-green-600">39</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Facturas</p>
+            <p class="text-2xl font-bold mt-1 text-purple-600">4</p>
+          </div>
+        </div>
+        <!-- Tabla -->
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-left px-4 py-2 border-b">Fecha</th>
+                <th class="text-left px-4 py-2 border-b">Tipo</th>
+                <th class="text-right px-4 py-2 border-b">N°</th>
+                <th class="text-left px-4 py-2 border-b">RUT Cliente</th>
+                <th class="text-left px-4 py-2 border-b">Cajero</th>
+                <th class="text-right px-4 py-2 border-b">Items</th>
+                <th class="text-right px-4 py-2 border-b">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b text-gray-500 text-xs">09/04/2026 17:42</td>
+                <td class="px-4 py-2 border-b"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Boleta</span></td>
+                <td class="px-4 py-2 border-b text-right font-mono">2847</td>
+                <td class="px-4 py-2 border-b">66.666.666-6</td>
+                <td class="px-4 py-2 border-b">Carlos Pérez</td>
+                <td class="px-4 py-2 border-b text-right">3</td>
+                <td class="px-4 py-2 border-b text-right font-semibold">$5.960</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b text-gray-500 text-xs">09/04/2026 17:21</td>
+                <td class="px-4 py-2 border-b"><span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Factura</span></td>
+                <td class="px-4 py-2 border-b text-right font-mono">152</td>
+                <td class="px-4 py-2 border-b">76.543.210-K</td>
+                <td class="px-4 py-2 border-b">Carlos Pérez</td>
+                <td class="px-4 py-2 border-b text-right">7</td>
+                <td class="px-4 py-2 border-b text-right font-semibold">$18.750</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b text-gray-500 text-xs">09/04/2026 16:55</td>
+                <td class="px-4 py-2 border-b"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Boleta</span></td>
+                <td class="px-4 py-2 border-b text-right font-mono">2846</td>
+                <td class="px-4 py-2 border-b">66.666.666-6</td>
+                <td class="px-4 py-2 border-b">Carlos Pérez</td>
+                <td class="px-4 py-2 border-b text-right">5</td>
+                <td class="px-4 py-2 border-b text-right font-semibold">$12.390</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Compras -->
+      <div id="erp-compras" class="erp-tab hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold">Compras</h1>
+          <button onclick="toggleCompraForm()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + Nueva compra
+          </button>
+        </div>
+
+        <!-- Formulario -->
+        <div id="compra-form" class="hidden bg-white rounded-lg shadow p-6 space-y-4">
+          <h2 class="text-lg font-semibold">Registrar recepción de mercadería</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">RUT Proveedor</label>
+              <input type="text" value="12.345.678-9" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Tipo documento</label>
+              <select class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                <option>Factura compra (46)</option>
+                <option>Nota débito (56)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">N° documento</label>
+              <input type="number" value="4521" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-left px-3 py-2 border-b">Cód. art.</th>
+                <th class="text-left px-3 py-2 border-b">Descripción</th>
+                <th class="text-right px-3 py-2 border-b">Cantidad</th>
+                <th class="text-right px-3 py-2 border-b">Costo neto</th>
+                <th class="text-right px-3 py-2 border-b">IVA %</th>
+                <th class="text-right px-3 py-2 border-b">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="px-2 py-1 border-b"><input type="number" value="1" class="w-20 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b"><input type="text" value="Leche Entera 1L" class="w-full border rounded px-2 py-1" /></td>
+                <td class="px-2 py-1 border-b"><input type="number" value="48" class="w-20 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b"><input type="number" value="850" class="w-24 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b"><input type="number" value="19" class="w-16 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b text-right font-medium">$48.552</td>
+              </tr>
+              <tr>
+                <td class="px-2 py-1 border-b"><input type="number" value="2" class="w-20 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b"><input type="text" value="Azúcar 1kg" class="w-full border rounded px-2 py-1" /></td>
+                <td class="px-2 py-1 border-b"><input type="number" value="24" class="w-20 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b"><input type="number" value="600" class="w-24 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b"><input type="number" value="19" class="w-16 border rounded px-2 py-1 text-right" /></td>
+                <td class="px-2 py-1 border-b text-right font-medium">$17.136</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" class="px-3 py-2 text-right font-semibold">Total:</td>
+                <td class="px-2 py-2 text-right font-bold text-lg">$65.688</td>
+              </tr>
+            </tfoot>
+          </table>
+          <button onclick="simRegistrarCompra()" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+            Registrar compra
+          </button>
+        </div>
+
+        <!-- Listado -->
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-left px-4 py-2 border-b">Fecha</th>
+                <th class="text-left px-4 py-2 border-b">Tipo doc.</th>
+                <th class="text-right px-4 py-2 border-b">N°</th>
+                <th class="text-left px-4 py-2 border-b">Proveedor (RUT)</th>
+                <th class="text-right px-4 py-2 border-b">Monto</th>
+              </tr>
+            </thead>
+            <tbody id="compras-tbody">
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b text-gray-500 text-xs">05/03/2026 10:15</td>
+                <td class="px-4 py-2 border-b">46</td>
+                <td class="px-4 py-2 border-b text-right font-mono">4201</td>
+                <td class="px-4 py-2 border-b">12.345.678-9</td>
+                <td class="px-4 py-2 border-b text-right font-semibold">$124.800</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 border-b text-gray-500 text-xs">28/02/2026 09:30</td>
+                <td class="px-4 py-2 border-b">46</td>
+                <td class="px-4 py-2 border-b text-right font-mono">4198</td>
+                <td class="px-4 py-2 border-b">98.765.432-1</td>
+                <td class="px-4 py-2 border-b text-right font-semibold">$87.320</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Inventario -->
+      <div id="erp-inventario" class="erp-tab hidden space-y-6">
+        <h1 class="text-2xl font-bold">Inventario</h1>
+
+        <section>
+          <h2 class="text-lg font-semibold mb-3 text-red-700">Productos bajo stock crítico</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse bg-white rounded-lg shadow">
+              <thead class="bg-red-50">
+                <tr>
+                  <th class="text-left px-4 py-2 border-b">Código</th>
+                  <th class="text-left px-4 py-2 border-b">Descripción</th>
+                  <th class="text-right px-4 py-2 border-b">Stock actual</th>
+                  <th class="text-right px-4 py-2 border-b">Stock crítico</th>
+                  <th class="text-right px-4 py-2 border-b">Diferencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="hover:bg-red-50">
+                  <td class="px-4 py-2 border-b font-mono">2</td>
+                  <td class="px-4 py-2 border-b">Azúcar 1kg</td>
+                  <td class="px-4 py-2 border-b text-right font-bold text-red-600">3 KG</td>
+                  <td class="px-4 py-2 border-b text-right">10 KG</td>
+                  <td class="px-4 py-2 border-b text-right text-red-600">-7</td>
+                </tr>
+                <tr class="hover:bg-red-50">
+                  <td class="px-4 py-2 border-b font-mono">18</td>
+                  <td class="px-4 py-2 border-b">Sal Fina 1kg</td>
+                  <td class="px-4 py-2 border-b text-right font-bold text-red-600">1 KG</td>
+                  <td class="px-4 py-2 border-b text-right">5 KG</td>
+                  <td class="px-4 py-2 border-b text-right text-red-600">-4</td>
+                </tr>
+                <tr class="hover:bg-red-50">
+                  <td class="px-4 py-2 border-b font-mono">34</td>
+                  <td class="px-4 py-2 border-b">Harina Sin Polvos 1kg</td>
+                  <td class="px-4 py-2 border-b text-right font-bold text-red-600">2 KG</td>
+                  <td class="px-4 py-2 border-b text-right">8 KG</td>
+                  <td class="px-4 py-2 border-b text-right text-red-600">-6</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold mb-3">Historial de movimientos</h2>
+          <div class="flex gap-2 mb-4">
+            <input type="number" value="2" placeholder="Código artículo"
+              class="border rounded px-3 py-2 w-48 focus:ring-2 focus:ring-blue-500" />
+            <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Consultar</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse bg-white rounded-lg shadow">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="text-left px-4 py-2 border-b">Fecha</th>
+                  <th class="text-left px-4 py-2 border-b">Operación</th>
+                  <th class="text-center px-4 py-2 border-b">Acción</th>
+                  <th class="text-right px-4 py-2 border-b">Cantidad</th>
+                  <th class="text-right px-4 py-2 border-b">Stock ant.</th>
+                  <th class="text-right px-4 py-2 border-b">Stock nuevo</th>
+                  <th class="text-left px-4 py-2 border-b">Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-2 border-b text-gray-500 text-xs">09/04/2026 17:42</td>
+                  <td class="px-4 py-2 border-b font-mono text-xs">VENTA POS</td>
+                  <td class="px-4 py-2 border-b text-center"><span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">-</span></td>
+                  <td class="px-4 py-2 border-b text-right">1</td>
+                  <td class="px-4 py-2 border-b text-right">4</td>
+                  <td class="px-4 py-2 border-b text-right font-medium">3</td>
+                  <td class="px-4 py-2 border-b text-gray-600 text-xs">Boleta #2847</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-2 border-b text-gray-500 text-xs">05/03/2026 10:15</td>
+                  <td class="px-4 py-2 border-b font-mono text-xs">COMPRA</td>
+                  <td class="px-4 py-2 border-b text-center"><span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">+</span></td>
+                  <td class="px-4 py-2 border-b text-right">24</td>
+                  <td class="px-4 py-2 border-b text-right">3</td>
+                  <td class="px-4 py-2 border-b text-right font-medium">27</td>
+                  <td class="px-4 py-2 border-b text-gray-600 text-xs">Factura #4201</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-2 border-b text-gray-500 text-xs">01/03/2026 09:00</td>
+                  <td class="px-4 py-2 border-b font-mono text-xs">AJUSTE MANUAL</td>
+                  <td class="px-4 py-2 border-b text-center"><span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">-</span></td>
+                  <td class="px-4 py-2 border-b text-right">2</td>
+                  <td class="px-4 py-2 border-b text-right">5</td>
+                  <td class="px-4 py-2 border-b text-right font-medium">3</td>
+                  <td class="px-4 py-2 border-b text-gray-600 text-xs">Merma por humedad</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div><!-- /module-erp -->
+
+
+<!-- ═══════════════════════
+     MODALES ERP
+════════════════════════ -->
+<div id="modal-precio" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
+    <h3 class="text-lg font-semibold">Actualizar precio — art. 1</h3>
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">Precio público (con IVA)</label>
+      <input type="number" value="1290" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">Precio neto (sin IVA)</label>
+      <input type="number" value="1084" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <div class="flex gap-2">
+      <button onclick="closeModal('modal-precio')" class="flex-1 bg-blue-600 text-white rounded py-2 hover:bg-blue-700">Guardar</button>
+      <button onclick="closeModal('modal-precio')" class="flex-1 border rounded py-2 hover:bg-gray-50">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-stock" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
+    <h3 class="text-lg font-semibold">Ajustar stock — art. 1</h3>
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">Nuevo stock</label>
+      <input type="number" value="48" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">Motivo del ajuste</label>
+      <input type="text" placeholder="Ej: Inventario físico, merma, etc."
+        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <div class="flex gap-2">
+      <button onclick="closeModal('modal-stock')" class="flex-1 bg-orange-600 text-white rounded py-2 hover:bg-orange-700">Ajustar</button>
+      <button onclick="closeModal('modal-stock')" class="flex-1 border rounded py-2 hover:bg-gray-50">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════
+     JAVASCRIPT
+════════════════════════ -->
+<script>
+// ─── Datos simulados de productos ───
+const PRODUCTOS = {
+  '7801234000012': { codArt: 1, descripcion: 'Leche Entera 1L',     precioPublico: 1290, simboloUnidad: 'UN', tipoPesable: false },
+  '7802100010012': { codArt: 2, descripcion: 'Azúcar 1kg',           precioPublico: 890,  simboloUnidad: 'KG', tipoPesable: true  },
+  '7801640042261': { codArt: 3, descripcion: 'Aceite Vegetal 900ml', precioPublico: 2490, simboloUnidad: 'UN', tipoPesable: false },
+  '2000001':       { codArt: 4, descripcion: 'Pan Marraqueta',       precioPublico: 1800, simboloUnidad: 'KG', tipoPesable: true  },
+}
+
+let cart = []
+let productoActual = null
+
+// ─── Módulos ───
+function showModule(mod) {
+  document.querySelectorAll('.module-screen').forEach(el => el.classList.add('hidden'))
+  document.querySelectorAll('.module-nav-btn').forEach(el => {
+    el.className = 'module-nav-btn px-4 py-1.5 rounded text-sm font-medium text-gray-600 hover:bg-gray-100'
+  })
+  document.getElementById('module-' + mod).classList.remove('hidden')
+  const btn = document.getElementById('nav-' + mod)
+  btn.className = 'module-nav-btn px-4 py-1.5 rounded text-sm font-medium bg-gray-900 text-white'
+  const puertos = { balanza: '3001 / 5173', pos: '3002 / 5174', erp: '3003 / 5175' }
+  document.getElementById('puerto-label').textContent = puertos[mod]
+}
+
+// ─── Balanza ───
+function simBarra(barra) {
+  document.getElementById('barra-input').value = barra
+  buscarProducto()
+}
+
+function buscarProducto() {
+  const barra = document.getElementById('barra-input').value.trim()
+  const prod = PRODUCTOS[barra]
+  document.getElementById('barra-error').classList.add('hidden')
+  document.getElementById('producto-card').classList.add('hidden')
+
+  if (!prod) {
+    document.getElementById('barra-error').classList.remove('hidden')
+    productoActual = null
+    return
+  }
+  productoActual = prod
+  document.getElementById('prod-nombre').textContent = prod.descripcion
+  document.getElementById('prod-precio').textContent = formatPesos(prod.precioPublico) + ' / ' + prod.simboloUnidad
+  document.getElementById('prod-cantidad').value = 1
+  actualizarTotalProd()
+  document.getElementById('producto-card').classList.remove('hidden')
+}
+
+function actualizarTotalProd() {
+  if (!productoActual) return
+  const cant = parseFloat(document.getElementById('prod-cantidad').value) || 0
+  document.getElementById('prod-total').textContent = 'Total: ' + formatPesos(cant * productoActual.precioPublico)
+}
+document.getElementById('prod-cantidad').addEventListener('input', actualizarTotalProd)
+
+function agregarItem() {
+  if (!productoActual) return
+  const cant = parseFloat(document.getElementById('prod-cantidad').value) || 1
+  const total = cant * productoActual.precioPublico
+
+  // Acumular si ya existe
+  const existing = cart.find(i => i.codArt === productoActual.codArt)
+  if (existing) {
+    existing.cantidad += cant
+    existing.total += total
+  } else {
+    cart.push({ ...productoActual, cantidad: cant, total })
+  }
+
+  renderCart()
+  document.getElementById('barra-input').value = ''
+  document.getElementById('producto-card').classList.add('hidden')
+  document.getElementById('barra-input').focus()
+  productoActual = null
+}
+
+function renderCart() {
+  const container = document.getElementById('cart-items')
+  const empty = document.getElementById('cart-empty')
+  const totalEl = document.getElementById('cart-total')
+  const countEl = document.getElementById('cart-count')
+  const btnQr = document.getElementById('btn-generar-qr')
+
+  if (cart.length === 0) {
+    empty.classList.remove('hidden')
+    container.innerHTML = ''
+    container.appendChild(empty)
+    totalEl.textContent = '$0'
+    countEl.textContent = '0'
+    btnQr.disabled = true
+    btnQr.className = 'bg-blue-900 text-blue-400 font-bold py-3 rounded-lg text-lg cursor-not-allowed'
+    return
+  }
+
+  empty.classList.add('hidden')
+  container.innerHTML = ''
+  let total = 0
+  cart.forEach(item => {
+    total += item.total
+    const div = document.createElement('div')
+    div.className = 'bg-gray-700 rounded-lg p-3 flex justify-between items-center'
+    div.innerHTML = `
+      <div>
+        <p class="text-white text-sm font-medium">${item.descripcion}</p>
+        <p class="text-gray-400 text-xs">${item.cantidad} ${item.simboloUnidad} × ${formatPesos(item.precioPublico)}</p>
+      </div>
+      <p class="text-green-400 font-bold">${formatPesos(item.total)}</p>
+    `
+    container.appendChild(div)
+  })
+  totalEl.textContent = formatPesos(total)
+  countEl.textContent = cart.length
+  btnQr.disabled = false
+  btnQr.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-lg cursor-pointer'
+}
+
+function generarQr() {
+  if (cart.length === 0) return
+  const total = cart.reduce((s, i) => s + i.total, 0)
+  const uuid = 'PRE-' + Date.now()
+  const payload = `1|1|${uuid}|${Math.round(total)}|${Date.now()}`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(payload)}`
+
+  document.getElementById('qr-img').src = qrUrl
+  document.getElementById('qr-monto').textContent = formatPesos(total)
+  document.getElementById('qr-items').textContent = cart.length + ' producto(s)'
+
+  // Notificar n8n — workflow 03 Monitor Pre-boleta QR
+  n8nNotify('preboleta-created', {
+    uuid,
+    station_id: 'EST-01',
+    operator_id: 'op-maria',
+    items: cart.map(i => ({ nombre: i.descripcion, codArt: i.codArt, cantidad: i.cantidad, precio_unitario: i.precioPublico, total: i.total, unidad: i.simboloUnidad })),
+    total_clp: Math.round(total),
+    created_at: new Date().toISOString(),
+    qr_url: qrUrl
+  })
+
+  document.getElementById('balanza-scan').className = 'screen min-h-[calc(100vh-48px)] bg-gray-900 p-4 flex gap-4'
+  showScreen('balanza', 'qr')
+}
+
+function nuevaVentaBalanza() {
+  cart = []
+  renderCart()
+  showScreen('balanza', 'scan')
+}
+
+function cancelarBalanza() {
+  cart = []
+  renderCart()
+}
+
+// ─── POS Caja ───
+function simularLecturaQr() {
+  showScreen('pos', 'venta')
+}
+
+function confirmarVenta() {
+  // Notificar n8n — venta confirmada (auditoría + SII demo)
+  n8nNotify('venta-confirmada', {
+    folio: Math.floor(2848 + Math.random() * 100),
+    total_clp: 5960,
+    metodo_pago: 'efectivo',
+    cajero_id: 'op-carlos',
+    timestamp: new Date().toISOString()
+  })
+  showScreen('pos', 'confirmada')
+}
+
+function cancelarVenta() {
+  showScreen('pos', 'esperando')
+}
+
+function nuevaVentaPos() {
+  showScreen('pos', 'esperando')
+}
+
+// ─── ERP ───
+function erpTab(tab) {
+  document.querySelectorAll('.erp-tab').forEach(el => el.classList.add('hidden'))
+  document.querySelectorAll('.erp-nav-btn').forEach(el => {
+    el.className = 'erp-nav-btn px-4 py-2 rounded text-sm font-medium text-blue-100 hover:bg-blue-700'
+  })
+  document.getElementById('erp-' + tab).classList.remove('hidden')
+  document.getElementById('erp-nav-' + tab).className = 'erp-nav-btn px-4 py-2 rounded text-sm font-medium bg-blue-700 text-white'
+}
+
+function renderDashboard() {
+  document.getElementById('dash-hora').textContent = 'Actualiza cada minuto · ' + new Date().toLocaleTimeString('es-CL')
+  const horas = [
+    {l:'9:00',v:3200},{l:'10:00',v:7800},{l:'11:00',v:5400},{l:'12:00',v:9100},
+    {l:'13:00',v:6200},{l:'14:00',v:4300},{l:'15:00',v:8700},{l:'16:00',v:11200},
+    {l:'17:00',v:14300},{l:'18:00',v:8900}
+  ]
+  const maxH = Math.max(...horas.map(h => h.v))
+  document.getElementById('horas-chart').innerHTML = horas.map(h => `
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-gray-500 w-12 shrink-0">${h.l}</span>
+      <div class="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
+        <div class="h-5 rounded-full bg-blue-500 flex items-center justify-end pr-2"
+          style="width:${Math.max(4,(h.v/maxH)*100)}%">
+          <span class="text-xs text-white font-medium">${formatPesos(h.v)}</span>
+        </div>
+      </div>
+    </div>`).join('')
+
+  const top = [
+    {n:'Leche Entera 1L',v:142},{n:'Pan Marraqueta',v:98},{n:'Azúcar 1kg',v:87},
+    {n:'Aceite Vegetal',v:74},{n:'Detergente 3L',v:63},{n:'Arroz 1kg',v:58},
+    {n:'Sal Fina 1kg',v:45},{n:'Fideos 500g',v:41},{n:'Jugo Naranja',v:38},{n:'Mantequilla',v:32}
+  ]
+  const maxT = top[0].v
+  document.getElementById('top-chart').innerHTML = top.map(t => `
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-gray-500 w-28 truncate shrink-0">${t.n}</span>
+      <div class="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
+        <div class="h-5 rounded-full bg-indigo-500 flex items-center justify-end pr-2"
+          style="width:${Math.max(4,(t.v/maxT)*100)}%">
+          <span class="text-xs text-white font-medium">${t.v}</span>
+        </div>
+      </div>
+    </div>`).join('')
+}
+
+function toggleCompraForm() {
+  const form = document.getElementById('compra-form')
+  form.classList.toggle('hidden')
+}
+
+function simRegistrarCompra() {
+  const tbody = document.getElementById('compras-tbody')
+  const row = document.createElement('tr')
+  row.className = 'hover:bg-gray-50 bg-green-50'
+  row.innerHTML = `
+    <td class="px-4 py-2 border-b text-gray-500 text-xs">09/04/2026 ${new Date().toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'})}</td>
+    <td class="px-4 py-2 border-b">46</td>
+    <td class="px-4 py-2 border-b text-right font-mono">4521</td>
+    <td class="px-4 py-2 border-b">12.345.678-9</td>
+    <td class="px-4 py-2 border-b text-right font-semibold">$65.688</td>
+  `
+  tbody.insertBefore(row, tbody.firstChild)
+  document.getElementById('compra-form').classList.add('hidden')
+  setTimeout(() => row.classList.remove('bg-green-50'), 2000)
+}
+
+// ─── Modales ───
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden')
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden')
+}
+
+// ─── Pantallas por módulo ───
+function showScreen(module, screen) {
+  const prefix = module === 'balanza' ? 'balanza-' : module === 'pos' ? 'pos-' : 'erp-'
+  document.querySelectorAll(`[id^="${prefix}"]`).forEach(el => {
+    if (el.classList.contains('screen')) {
+      el.classList.remove('active')
+      el.style.display = 'none'
+    }
+  })
+  const target = document.getElementById(prefix + screen)
+  if (target) {
+    target.classList.add('active')
+    target.style.display = 'flex'
+  }
+}
+
+// ─── Utilidades ───
+function formatPesos(n) {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n)
+}
+
+// ─── n8n Integration ───────────────────────────────────────
+const N8N_URL = 'http://localhost:5678'
+
+/**
+ * Envía un evento al webhook de n8n correspondiente.
+ * Falla silenciosamente si n8n no está corriendo.
+ */
+async function n8nNotify(webhook, data) {
+  try {
+    // Intentar con CORS normal primero (funciona si n8n tiene CORS habilitado)
+    const res = await fetch(`${N8N_URL}/webhook/${webhook}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(3000)
+    })
+    n8nSetStatus('online')
+    console.log(`[n8n] ✓ webhook/${webhook}`, data)
+  } catch (corsErr) {
+    // Fallback no-cors: el browser envía igual el POST pero no podemos leer respuesta.
+    // Suficiente para disparar el workflow en n8n.
+    try {
+      await fetch(`${N8N_URL}/webhook/${webhook}`, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        signal: AbortSignal.timeout(3000)
+      })
+      n8nSetStatus('online')
+      console.log(`[n8n] ✓ webhook/${webhook} (no-cors)`, data)
+    } catch (e) {
+      console.warn(`[n8n] webhook/${webhook} sin respuesta — ¿n8n apagado?`, e.message)
+    }
+  }
+}
+
+/** Verifica si n8n está corriendo.
+ *  Usa no-cors porque demo.html se abre como file:// y el browser
+ *  bloquea fetch cross-origin sin header CORS. Con no-cors la respuesta
+ *  es opaca pero el fetch resuelve (no lanza) si el servidor está activo.
+ */
+async function n8nCheckStatus() {
+  try {
+    await fetch(`${N8N_URL}/healthz`, {
+      mode: 'no-cors',
+      signal: AbortSignal.timeout(2500)
+    })
+    // Si llegamos aquí, el servidor respondió → online
+    n8nSetStatus('online')
+  } catch {
+    n8nSetStatus('offline')
+  }
+}
+
+function n8nSetStatus(status) {
+  const dot  = document.getElementById('n8n-dot')
+  const text = document.getElementById('n8n-status-text')
+  if (!dot || !text) return
+  if (status === 'online') {
+    dot.className  = 'w-2 h-2 rounded-full bg-green-500 inline-block'
+    text.textContent = 'activo'
+    text.className = 'font-normal text-green-600'
+  } else {
+    dot.className  = 'w-2 h-2 rounded-full bg-red-400 inline-block'
+    text.textContent = 'sin conexión'
+    text.className = 'font-normal text-red-500'
+  }
+}
+
+// Verificar estado n8n al cargar y cada 30 seg
+n8nCheckStatus()
+setInterval(n8nCheckStatus, 30000)
+
+// ─── Init ───────────────────────────────────────────────────
+document.querySelectorAll('.screen.active').forEach(el => { el.style.display = 'flex' })
+renderDashboard()
+setInterval(() => { document.getElementById('dash-hora').textContent = 'Actualiza cada minuto · ' + new Date().toLocaleTimeString('es-CL') }, 10000)
+</script>
+</body>
+</html>

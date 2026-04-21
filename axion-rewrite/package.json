@@ -1,0 +1,26 @@
+{
+  "name": "optimind",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sistema Axion — Monorepo (Balanza · POS · ERP · DTE)",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:generate": "turbo run db:generate --filter=@optimind/database",
+    "db:migrate": "turbo run db:migrate --filter=@optimind/database",
+    "db:seed": "turbo run db:seed --filter=@optimind/database",
+    "db:studio": "turbo run db:studio --filter=@optimind/database"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "prettier": "^3.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
