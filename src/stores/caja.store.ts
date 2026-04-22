@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore, acceptHMRUpdate } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CajaEstado, ItemVenta, TabVenta, PreBoleta, BalanzaEnCola } from '../types'
 import { useReportesStore } from './reportes.store'
@@ -185,7 +185,7 @@ export const useCajaStore = defineStore('caja', () => {
           numeroBoleta:  tab.preBoleta.numero ?? 0,
           total:         tabTotal,
           itemCount:     tab.preBoleta.items.length,
-          items:         [...tab.preBoleta.items],
+          items:         tab.preBoleta.items.map(i => ({ id: i.id, name: i.name, qty: i.qty, unit: i.unit, priceUnit: i.priceUnit, supplier: i.supplier })),
           fecha:         new Date().toISOString(),
         })
       }
@@ -352,7 +352,7 @@ export const useCajaStore = defineStore('caja', () => {
     tabs.value.push(nueva)
     // Limpiar items de la balanza y dejarla libre para el próximo cliente
     itemsPorBalanza.value[balanzaId] = []
-    // NO navegar a 'active' — quedar en idle para flujo continuo
+    setTabActivo(nueva.tabId)
   }
 
   // Mantener para merge flow
@@ -412,3 +412,7 @@ export const useCajaStore = defineStore('caja', () => {
     },
   },
 })
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useCajaStore, import.meta.hot))
+}

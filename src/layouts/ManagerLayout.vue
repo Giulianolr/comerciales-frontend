@@ -360,9 +360,9 @@ const updateTime = () => {
 // Sincronización automática entre tabs: cuando otra pestaña escribe en localStorage,
 // re-hidratamos los stores para que el estado sea siempre coherente.
 const PERSISTED_KEYS: Record<string, () => void> = {
-  'comerciales-dashboard': () => (dashboardStore  as any).$hydrate(),
-  'comerciales-inventory': () => (inventoryStore  as any).$hydrate(),
-  'comerciales-reportes':  () => (reportesStore   as any).$hydrate(),
+  'comerciales-dashboard':  () => (dashboardStore as any).$hydrate(),
+  'comerciales-inventory':  () => (inventoryStore as any).$hydrate(),
+  'comerciales-anulaciones': () => reportesStore.recargarDesdeStorage(),
 }
 
 function onStorageChange(event: StorageEvent) {

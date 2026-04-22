@@ -335,13 +335,16 @@
                     <table class="w-full text-xs">
                       <thead>
                         <tr class="bg-surface border-b border-border">
-                          <th class="text-left px-4 py-2 text-muted font-medium">Producto</th>
+                          <th class="text-left px-4 py-2 text-muted font-medium">Detalle de productos</th>
                           <th class="text-right px-4 py-2 text-muted font-medium w-24">Cantidad</th>
                           <th class="text-right px-4 py-2 text-muted font-medium w-32">P. Unitario</th>
                           <th class="text-right px-4 py-2 text-muted font-medium w-32">Subtotal</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-border">
+                        <tr v-if="!evt.items || evt.items.length === 0">
+                          <td colspan="4" class="px-4 py-3 text-center text-muted italic">Sin detalle de productos disponible</td>
+                        </tr>
                         <tr v-for="item in evt.items" :key="item.id" class="hover:bg-surface">
                           <td class="px-4 py-2 text-primary">{{ item.name }}</td>
                           <td class="px-4 py-2 text-right text-secondary">
@@ -413,7 +416,7 @@ function limpiarEvtFiltros() {
 }
 
 function confirmarBorrarTodo() {
-  if (confirm('¿Borrar todos los registros de anulaciones? Esta acción no se puede deshacer.')) {
+  if (confirm('¿Borrar todos los registros de la sección "Anulaciones de Pre-boletas"? El resto de los reportes no se verá afectado. Esta acción no se puede deshacer.')) {
     reportesStore.limpiarEventosCaja()
   }
 }
