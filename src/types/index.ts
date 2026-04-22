@@ -98,7 +98,7 @@ export interface Station {
 }
 
 // User Types
-export type UserRole = 'gerente' | 'operador' | 'cajero' | 'supervisor' | 'dev'
+export type UserRole = 'gerente' | 'operador' | 'cajero' | 'supervisor' | 'dev' | 'vendor'
 
 export interface User {
   id: string
@@ -194,6 +194,22 @@ export interface BalanzaEnCola {
   creadaHace: string
   activa: boolean        // true = tiene pre-boleta pendiente
   advertencia?: boolean  // true = lleva mucho tiempo esperando
+}
+
+// ─── Turnos ───────────────────────────────────────────────────────────────────
+
+export interface TurnoRecord {
+  id: string
+  stationId: number
+  stationName: string
+  operatorId: string
+  operatorName: string
+  operatorRole: string
+  startTime: string   // ISO
+  endTime: string     // ISO
+  transacciones: number
+  totalVentas: number
+  fecha: string       // YYYY-MM-DD
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

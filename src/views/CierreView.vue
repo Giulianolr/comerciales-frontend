@@ -105,7 +105,7 @@
               <th class="text-left pb-2 text-xs font-medium text-muted uppercase tracking-wider">Estación</th>
               <th class="text-left pb-2 text-xs font-medium text-muted uppercase tracking-wider">Operario</th>
               <th class="text-right pb-2 text-xs font-medium text-muted uppercase tracking-wider">Ventas</th>
-              <th class="text-right pb-2 text-xs font-medium text-muted uppercase tracking-wider">Trans.</th>
+              <th class="text-right pb-2 text-xs font-medium text-muted uppercase tracking-wider">Ventas</th>
               <th class="text-right pb-2 text-xs font-medium text-muted uppercase tracking-wider">T. Prom.</th>
             </tr>
           </thead>

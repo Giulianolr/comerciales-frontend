@@ -2,6 +2,7 @@ import { defineStore, acceptHMRUpdate } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CajaEstado, ItemVenta, TabVenta, PreBoleta, BalanzaEnCola } from '../types'
 import { useReportesStore } from './reportes.store'
+import { useDashboardStore } from './dashboard.store'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -141,6 +142,26 @@ export const useCajaStore = defineStore('caja', () => {
   function procesarCobro() {
     estado.value = 'processing'
     setTimeout(() => { estado.value = 'success' }, 1800)
+  }
+
+  function confirmarVenta() {
+    // Capturar datos antes de cerrar el tab (computed se pierde al cerrar)
+    const totalVenta = total.value
+    const balanzaId  = tabActivo.value?.preBoleta.balanzaId
+    const tabId      = tabActivo.value?.tabId
+    if (tabId !== undefined) {
+      cerrarTab(tabId)
+      if (tabs.value.length > 0) irA('active')
+    }
+    // Registrar venta en la balanza que originó la pre-boleta y en la Caja
+    const dashStore = useDashboardStore()
+    if (balanzaId !== undefined) {
+      dashStore.registrarTransaccion(balanzaId, totalVenta)
+    }
+    const cajaStation = dashStore.stations.find(s => s.type === 'caja')
+    if (cajaStation) {
+      dashStore.registrarTransaccion(cajaStation.id, totalVenta)
+    }
   }
 
   function nuevaVenta() {
@@ -285,6 +306,7 @@ export const useCajaStore = defineStore('caja', () => {
     }
     metodoPago.value = m
     if (m === 'efectivo') {
+      montoRecibido.value = 0
       estado.value = 'cash'
     } else if (estado.value === 'cash') {
       estado.value = 'active'
@@ -370,7 +392,7 @@ export const useCajaStore = defineStore('caja', () => {
     tabActivo, items, total, neto, iva, vuelto, montoMixtoEfectivo,
     esMerged, mergedCount, totalMergePreview, itemsMergePreview, editingItem, otrosTabs,
     // Actions
-    irA, procesarCobro, nuevaVenta,
+    irA, procesarCobro, confirmarVenta, nuevaVenta,
     setTabActivo, cerrarTab, cancelarTab,
     abrirModalScan, cerrarModalScan, confirmarMerge, abrirEnNuevaTab,
     abrirModalEdit, cerrarModalEdit, guardarEdicionItem, eliminarItem,
@@ -400,6 +422,7 @@ export const useCajaStore = defineStore('caja', () => {
       ctx.store.pagoMixto            = false
       ctx.store.montoMixtoTarjeta    = 0
       ctx.store.metodoPagoSecundario = null
+      ctx.store.balanzaSeleccionadaId = null
       // Migración: pre-boletas viejas sin número reciben uno correlativo
       let maxNum = ctx.store.nextPreboletaNum ?? 1
       ctx.store.tabs.forEach((tab: TabVenta, idx: number) => {

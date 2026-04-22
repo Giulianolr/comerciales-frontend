@@ -14,7 +14,7 @@ const MOCK_USERS: Array<{ email: string; password: string; user: AuthUser; token
     email: 'caja@comerciales.cl',
     password: 'caja123',
     token: 'mock-token-cajero-xyz789',
-    user: { id: '2', email: 'caja@comerciales.cl', nombre: 'Operario', role: 'cajero' }
+    user: { id: '2', email: 'caja@comerciales.cl', nombre: 'Carlos Méndez', role: 'cajero' }
   },
   {
     email: 'supervisor@comerciales.cl',

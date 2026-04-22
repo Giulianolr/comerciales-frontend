@@ -31,7 +31,7 @@
         </div>
         <div class="flex justify-between text-xs">
           <span class="text-muted">Cajero</span>
-          <span class="text-secondary">Juan Pérez</span>
+          <span class="text-secondary">{{ cajeroNombre }}</span>
         </div>
       </div>
 
@@ -58,8 +58,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCajaStore } from '../../stores/caja.store'
+import { useAuthStore } from '../../stores/auth.store'
 
-const cajaStore = useCajaStore()
+const cajaStore  = useCajaStore()
+const authStore  = useAuthStore()
+
+const cajeroNombre = computed(() => {
+  const u = authStore.user
+  if (!u) return '—'
+  return `${u.nombre} ${u.apellido ?? ''}`.trim()
+})
 
 const metodoPagoLabel = computed(() => ({
   efectivo:      'Efectivo',
@@ -69,11 +77,7 @@ const metodoPagoLabel = computed(() => ({
 }[cajaStore.metodoPago] ?? cajaStore.metodoPago))
 
 function confirmar() {
-  const tabId = cajaStore.tabActivo?.tabId
-  if (tabId !== undefined) {
-    cajaStore.cerrarTab(tabId)
-    if (cajaStore.tabs.length > 0) cajaStore.irA('active')
-  }
+  cajaStore.confirmarVenta()
 }
 
 function anular() {

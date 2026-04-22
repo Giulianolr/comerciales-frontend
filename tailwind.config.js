@@ -20,7 +20,22 @@ export default {
           700: '#1d4ed8',
           800: '#1e40af',
           900: '#1e3a8a'
-        }
+        },
+        danger: {
+          400: '#f87171',
+          500: '#ef4444',
+          600: '#dc2626',
+        },
+        success: {
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+        },
+        warning: {
+          400: '#facc15',
+          500: '#eab308',
+          600: '#ca8a04',
+        },
       },
       backgroundColor: {
         primary: '#0F1117',

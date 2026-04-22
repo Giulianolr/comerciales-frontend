@@ -613,7 +613,7 @@ function labelPago(e: EstadoPago) {
 
 function badgeRecepcion(e: EstadoRecepcion) {
   return {
-    pendiente: 'bg-[#2E3348] text-secondary',
+    pendiente: 'bg-surface-2 text-secondary border border-border',
     parcial:   'bg-sky-500/10 text-sky-400',
     completa:  'bg-teal-500/10 text-teal-400',
   }[e]

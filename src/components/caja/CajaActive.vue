@@ -86,7 +86,7 @@
 
           <!-- Cancelar venta -->
           <button
-            @click="cajaStore.irA('idle')"
+            @click="cajaStore.tabActivo && cajaStore.cancelarTab(cajaStore.tabActivo.tabId)"
             class="text-xs text-muted hover:text-danger-400 transition-colors flex items-center gap-1"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,29 +183,34 @@
 
         <!-- Método de pago -->
         <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <p class="text-xs text-muted uppercase tracking-wider">Método de pago</p>
+          <p class="text-xs text-muted uppercase tracking-wider mb-1.5">Método de pago</p>
+          <div class="flex gap-1.5">
+            <div class="grid grid-cols-2 gap-1.5 flex-1">
+              <button
+                v-for="m in metodos"
+                :key="m.key"
+                @click="cajaStore.setMetodoPago(m.key as any)"
+                :class="cajaStore.metodoPago === m.key ? 'active' : ''"
+                class="btn-pay-method border rounded-lg px-3 py-2 text-xs font-medium text-left"
+              >
+                <div class="text-sm mb-0.5">{{ m.emoji }}</div>
+                {{ m.label }}
+              </button>
+            </div>
+            <!-- Toggle pago mixto -->
             <button
               @click="cajaStore.togglePagoMixto()"
-              :class="cajaStore.pagoMixto ? 'bg-brand-500 border-brand-500' : 'border-border'"
-              class="w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0"
-              title="Pago mixto (efectivo + otro método)"
+              :class="cajaStore.pagoMixto
+                ? 'bg-brand-500 border-brand-500 text-white'
+                : 'bg-surface-2 border-border text-muted hover:border-brand-500/50 hover:text-secondary'"
+              class="border rounded-lg px-2 flex flex-col items-center justify-center gap-1 transition-colors shrink-0 w-12"
+              title="Pago mixto"
             >
-              <svg v-if="cajaStore.pagoMixto" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-1.5">
-            <button
-              v-for="m in metodos"
-              :key="m.key"
-              @click="cajaStore.setMetodoPago(m.key as any)"
-              :class="cajaStore.metodoPago === m.key ? 'active' : ''"
-              class="btn-pay-method border rounded-lg px-3 py-2 text-xs font-medium text-left"
-            >
-              <div class="text-sm mb-0.5">{{ m.emoji }}</div>
-              {{ m.label }}
+              <span class="text-[10px] font-medium leading-tight text-center">Mixto</span>
             </button>
           </div>
         </div>

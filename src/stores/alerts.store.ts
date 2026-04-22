@@ -37,21 +37,7 @@ export interface ToastAlert {
 }
 
 // Alertas de equipos (estáticas hasta que llegue el backend)
-const INITIAL_EQUIPMENT_ALERTS: AppAlert[] = [
-  {
-    id: 'equip-station-3',
-    category: 'equipment',
-    severity: 'error',
-    title: 'Error de equipo',
-    subtitle: 'Balanza 3',
-    detail: 'Sin actividad hace más de 2h',
-    triggeredAt: new Date(Date.now() - 120 * 60000).toISOString(),
-    acknowledged: false,
-    read: true,   // mock estático: no suma al badge al cargar la página
-    navigateTo: '/gerente',
-    stationId: 3
-  }
-]
+const INITIAL_EQUIPMENT_ALERTS: AppAlert[] = []
 
 function severityForStatus(status: StockStatus): AlertSeverity {
   return (status === 'critical' || status === 'out_of_stock') ? 'critical' : 'low'

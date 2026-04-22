@@ -16,14 +16,14 @@
 }
 
 html.theme-light {
-  --clr-canvas:    #F1F5F9;
-  --clr-surface:   #FFFFFF;
-  --clr-surface-2: #F8FAFC;
-  --clr-border:    #E2E8F0;
+  --clr-canvas:    #E8EDF5;
+  --clr-surface:   #F4F7FB;
+  --clr-surface-2: #E8EDF5;
+  --clr-border:    #A8B4CC;
   --clr-primary:   #0F172A;
   --clr-secondary: #475569;
-  --clr-muted:     #94A3B8;
-  --clr-input-bg:  #F8FAFC;
+  --clr-muted:     #64748B;
+  --clr-input-bg:  #EDF0F7;
 }
 
 /* Override Tailwind plugin utilities con CSS vars para soporte de tema */
@@ -114,12 +114,12 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2E3348;
+  background: var(--clr-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--clr-secondary);
 }
 
 input[type="number"]::-webkit-inner-spin-button,

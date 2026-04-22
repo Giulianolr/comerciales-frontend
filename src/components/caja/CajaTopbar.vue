@@ -10,7 +10,9 @@
       </div>
       <span class="font-semibold text-primary text-sm">Caja Principal</span>
       <span class="text-muted text-sm">/</span>
-      <span class="text-secondary text-sm">{{ authStore.user?.nombre ?? '—' }}</span>
+      <span class="text-brand-400 text-sm">Operario</span>
+      <span class="text-muted text-sm">/</span>
+      <span class="text-brand-400 text-sm">{{ operadorNombre }}</span>
     </div>
 
     <!-- Derecha: estado conexión, sync badge, reloj, toggle tema, avatar, logout -->
@@ -92,10 +94,35 @@
       <!-- Reloj -->
       <div class="text-xs text-secondary font-mono">{{ hora }}</div>
 
-      <!-- Avatar -->
-      <div class="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-semibold">
-        {{ iniciales }}
+      <!-- Avatar dropdown -->
+      <div class="relative">
+        <button
+          @click="toggleAvatarMenu"
+          class="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-semibold hover:bg-brand-600 transition-colors"
+          title="Opciones de operario"
+        >
+          {{ iniciales }}
+        </button>
+
+        <div
+          v-if="avatarMenuOpen"
+          v-click-outside="() => { avatarMenuOpen = false }"
+          class="absolute right-0 top-full mt-1.5 w-48 bg-surface border border-border rounded-xl shadow-lg py-1 z-50"
+        >
+          <button
+            @click="openAsignacion"
+            class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-secondary hover:text-primary hover:bg-surface-2 transition-colors text-left"
+          >
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Asignación de balanza</span>
+          </button>
+        </div>
       </div>
+
+      <ModalAsignacionBalanza v-model="showAsignacion" />
 
       <!-- Logout -->
       <button
@@ -117,11 +144,19 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCajaStore } from '../../stores/caja.store'
 import { useAuthStore } from '../../stores/auth.store'
+import { useDashboardStore } from '../../stores/dashboard.store'
 import { useThemeStore } from '../../stores/theme.store'
 import { useZoomStore, ZOOM_LEVELS } from '../../stores/zoom.store'
+import ModalAsignacionBalanza from './ModalAsignacionBalanza.vue'
 
 const cajaStore = useCajaStore()
 const authStore = useAuthStore()
+const dashboardStore = useDashboardStore()
+
+const operadorNombre = computed(() => {
+  const cajaStation = dashboardStore.stations.find(s => s.type === 'caja')
+  return cajaStation?.operatorName ?? authStore.user?.nombre ?? '—'
+})
 const themeStore = useThemeStore()
 const zoomStore = useZoomStore()
 const router = useRouter()
@@ -133,6 +168,19 @@ const zoomOpen = ref(false)
 function selectZoom(level: typeof ZOOM_LEVELS[number]) {
   zoomStore.set(level)
   zoomOpen.value = false
+}
+
+const avatarMenuOpen = ref(false)
+const showAsignacion = ref(false)
+
+function toggleAvatarMenu() {
+  zoomOpen.value = false
+  avatarMenuOpen.value = !avatarMenuOpen.value
+}
+
+function openAsignacion() {
+  avatarMenuOpen.value = false
+  showAsignacion.value = true
 }
 
 // Directiva local click-outside

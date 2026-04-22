@@ -245,6 +245,8 @@ import { useThemeStore } from '../stores/theme.store'
 import { useZoomStore, ZOOM_LEVELS } from '../stores/zoom.store'
 import { useAlertsStore } from '../stores/alerts.store'
 import { useReportesStore } from '../stores/reportes.store'
+import { useUsersStore } from '../stores/users.store'
+import { useTurnosStore } from '../stores/turnos.store'
 import AlertsPanel from '../components/AlertsPanel.vue'
 import AlertsToastContainer from '../components/AlertsToastContainer.vue'
 
@@ -257,6 +259,8 @@ const themeStore = useThemeStore()
 const zoomStore = useZoomStore()
 const alertsStore   = useAlertsStore()
 const reportesStore = useReportesStore()
+const usersStore    = useUsersStore()
+const turnosStore   = useTurnosStore()
 
 const alertsPanelOpen = ref(false)
 const notifOpen = ref(false)
@@ -363,6 +367,8 @@ const PERSISTED_KEYS: Record<string, () => void> = {
   'comerciales-dashboard':  () => (dashboardStore as any).$hydrate(),
   'comerciales-inventory':  () => (inventoryStore as any).$hydrate(),
   'comerciales-anulaciones': () => reportesStore.recargarDesdeStorage(),
+  'comerciales-usuarios':    () => usersStore.recargarDesdeStorage(),
+  'comerciales-turnos':      () => turnosStore.recargarDesdeStorage(),
 }
 
 function onStorageChange(event: StorageEvent) {

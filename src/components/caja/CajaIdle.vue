@@ -58,7 +58,7 @@
                 : 'border-border hover:border-brand-500/50 bg-surface-2'"
             class="border rounded-lg p-3 text-left transition-all group"
           >
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between mb-1">
               <span class="text-xs font-medium text-secondary group-hover:text-primary transition-colors">
                 {{ balanza.nombre }}
               </span>
@@ -69,6 +69,11 @@
               ></span>
               <span v-else class="w-1.5 h-1.5 rounded-full bg-muted opacity-40"></span>
             </div>
+            <!-- Operario asignado -->
+            <p class="text-xs truncate mb-1.5"
+              :class="operatorName(balanza.id) ? 'text-brand-400 font-medium' : 'text-muted/50 italic'">
+              {{ operatorName(balanza.id) ?? 'Sin asignar' }}
+            </p>
             <p v-if="itemCount(balanza.id) > 0" class="text-sm font-semibold text-primary">
               ${{ totalBalanza(balanza.id).toLocaleString('es-CL') }}
             </p>
@@ -229,10 +234,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCajaStore, MOCK_COLA_BALANZAS } from '../../stores/caja.store'
+import { useDashboardStore } from '../../stores/dashboard.store'
 
-const cajaStore = useCajaStore()
-const scannerInput = ref<HTMLInputElement | null>(null)
-const colaBalanzas = MOCK_COLA_BALANZAS
+const cajaStore      = useCajaStore()
+const dashboardStore = useDashboardStore()
+const scannerInput   = ref<HTMLInputElement | null>(null)
+const colaBalanzas   = MOCK_COLA_BALANZAS
+
+function operatorName(balanzaId: number): string | null {
+  return dashboardStore.stations.find(s => s.id === balanzaId)?.operatorName ?? null
+}
 
 // Form manual
 const showFormManual = ref(false)
