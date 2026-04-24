@@ -139,6 +139,17 @@ export const useAlertsStore = defineStore('alerts', () => {
     return authStore.user?.role === 'dev'
   }
 
+  // Mantiene máx 10 alertas visibles (FIFO: descarta la más antigua al entrar la 11ª)
+  function capPanelAlerts() {
+    const visible = alerts.value
+      .filter(a => !a.acknowledged)
+      .sort((a, b) => new Date(a.triggeredAt).getTime() - new Date(b.triggeredAt).getTime())
+    if (visible.length > 10) {
+      const toRemove = new Set(visible.slice(0, visible.length - 10).map(a => a.id))
+      alerts.value = alerts.value.map(a => toRemove.has(a.id) ? { ...a, acknowledged: true } : a)
+    }
+  }
+
   function pushToast(alert: AppAlert) {
     const toast: ToastAlert = {
       id: alert.id,
@@ -201,6 +212,7 @@ export const useAlertsStore = defineStore('alerts', () => {
       minStock: product.minStock
     }
     alerts.value = [...alerts.value, newAlert]
+    capPanelAlerts()
     if (!isDev()) {
       if (soundEnabled.value) playAlertSound()
       if (toastsEnabled.value) pushToast(newAlert)
@@ -268,6 +280,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     if (exists) return
     const newAlert: AppAlert = { ...alert, id, acknowledged: false, read: false }
     alerts.value = [...alerts.value, newAlert]
+    capPanelAlerts()
     if (!isDev()) {
       if (soundEnabled.value) playAlertSound()
       if (toastsEnabled.value) pushToast(newAlert)

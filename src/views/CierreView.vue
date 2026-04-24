@@ -326,7 +326,7 @@ import { useDashboardStore } from '../stores/dashboard.store'
 import { useCierreStore } from '../stores/cierre.store'
 import { useAuthStore } from '../stores/auth.store'
 import { useAlertsStore } from '../stores/alerts.store'
-import { mockStationSales, mockTopProducts } from '../mocks/kpis'
+import { mockTopProducts } from '../mocks/kpis'
 
 const dashboardStore = useDashboardStore()
 const cierreStore = useCierreStore()
@@ -389,12 +389,22 @@ const metodosPago = [
   },
 ]
 
-// ─── Estaciones ───────────────────────────────────────────────────────────────
-const estaciones = mockStationSales
+// ─── Estaciones — datos reales del dashboardStore ─────────────────────────────
+const estaciones = computed(() =>
+  dashboardStore.stations.map(s => ({
+    stationId:     s.id,
+    stationName:   s.name,
+    ventas:        s.ventasToday,
+    transacciones: s.transactionsToday,
+    ticketPromedio: s.transactionsToday > 0
+      ? Math.round(s.ventasToday / s.transactionsToday)
+      : 0,
+  }))
+)
 
 const totalEstaciones = computed(() => ({
-  ventas: estaciones.reduce((s, e) => s + e.ventas, 0),
-  transacciones: estaciones.reduce((s, e) => s + e.transacciones, 0),
+  ventas:        estaciones.value.reduce((s, e) => s + e.ventas, 0),
+  transacciones: estaciones.value.reduce((s, e) => s + e.transacciones, 0),
 }))
 
 // ─── Top productos ────────────────────────────────────────────────────────────

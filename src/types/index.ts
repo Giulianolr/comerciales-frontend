@@ -106,6 +106,7 @@ export interface User {
   nombre: string
   apellido: string
   email: string
+  telefono?: string
   role: UserRole
   isActive: boolean
   assignedStationId: number | null

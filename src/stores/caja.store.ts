@@ -181,6 +181,7 @@ export const useCajaStore = defineStore('caja', () => {
     tabActivoId.value = tabId
     estado.value = 'active'
     pagoMixto.value = false
+    montoRecibido.value = 0
     montoMixtoTarjeta.value = 0
     metodoPagoSecundario.value = null
   }
@@ -420,6 +421,7 @@ export const useCajaStore = defineStore('caja', () => {
       ctx.store.editingItemId        = null
       ctx.store.preboletaEscan       = null
       ctx.store.pagoMixto            = false
+      ctx.store.montoRecibido        = 0
       ctx.store.montoMixtoTarjeta    = 0
       ctx.store.metodoPagoSecundario = null
       ctx.store.balanzaSeleccionadaId = null

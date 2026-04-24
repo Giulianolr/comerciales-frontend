@@ -59,19 +59,20 @@ function persistirUsuarios(u: User[]) {
 export const useUsersStore = defineStore('users', () => {
   const users = ref<User[]>(cargarUsuarios())
 
-  function updateUser(id: string, changes: Partial<Pick<User, 'nombre' | 'apellido' | 'email' | 'role'>>) {
+  function updateUser(id: string, changes: Partial<Pick<User, 'nombre' | 'apellido' | 'email' | 'telefono' | 'role'>>) {
     const fresh = cargarUsuarios().map(u => u.id === id ? { ...u, ...changes } : u)
     persistirUsuarios(fresh)
     users.value = fresh
   }
 
-  function addUser(data: Pick<User, 'nombre' | 'apellido' | 'email' | 'role'>) {
+  function addUser(data: Pick<User, 'nombre' | 'apellido' | 'email' | 'telefono' | 'role'>) {
     const newUser: User = {
       id: `u${Date.now()}`,
       rut: '',
       nombre: data.nombre,
       apellido: data.apellido,
       email: data.email,
+      telefono: data.telefono ?? '',
       role: data.role,
       isActive: true,
       assignedStationId: null,

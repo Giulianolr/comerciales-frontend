@@ -26,7 +26,7 @@
           <tr class="border-b border-border bg-input">
             <th class="text-left px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Usuario</th>
             <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Cargo</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Email</th>
+            <th class="text-left px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Contacto</th>
             <th class="text-center px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider">Estado</th>
             <th v-if="canEdit" class="text-center px-4 py-3 text-xs font-medium text-muted uppercase tracking-wider w-32">Acciones</th>
           </tr>
@@ -68,9 +68,9 @@
               </span>
             </td>
 
-            <!-- Email -->
+            <!-- Contacto -->
             <td class="px-4 py-3.5 text-secondary hidden md:table-cell">
-              {{ user.email || '—' }}
+              {{ user.telefono || '—' }}
             </td>
 
             <!-- Estado -->
@@ -202,13 +202,13 @@
               </div>
             </div>
 
-            <!-- Email -->
+            <!-- Número de contacto -->
             <div>
-              <label class="text-xs text-muted uppercase tracking-wider block mb-1.5">Correo electrónico</label>
+              <label class="text-xs text-muted uppercase tracking-wider block mb-1.5">Número de contacto</label>
               <input
-                v-model="form.email"
-                type="email"
-                placeholder="correo@ejemplo.cl (opcional)"
+                v-model="form.telefono"
+                type="tel"
+                placeholder="+56 9 1234 5678 (opcional)"
                 class="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-primary
                        outline-none focus:border-brand-500 transition-colors placeholder-muted"
               />
@@ -285,6 +285,7 @@ const form = reactive({
   nombre:   '',
   apellido: '',
   email:    '',
+  telefono: '',
   role:     'cajero' as UserRole,
 })
 
@@ -292,6 +293,7 @@ function resetForm() {
   form.nombre   = ''
   form.apellido = ''
   form.email    = ''
+  form.telefono = ''
   form.role     = 'cajero'
 }
 
@@ -308,6 +310,7 @@ function abrirEditar(user: User) {
   form.nombre   = user.nombre
   form.apellido = user.apellido
   form.email    = user.email
+  form.telefono = user.telefono ?? ''
   form.role     = user.role
   modalOpen.value = true
 }
@@ -319,6 +322,7 @@ function guardar() {
       nombre:   form.nombre.trim(),
       apellido: form.apellido.trim(),
       email:    form.email.trim(),
+      telefono: form.telefono.trim(),
       role:     form.role,
     })
   } else if (editingUser.value) {
@@ -326,6 +330,7 @@ function guardar() {
       nombre:   form.nombre.trim(),
       apellido: form.apellido.trim(),
       email:    form.email.trim(),
+      telefono: form.telefono.trim(),
       role:     form.role,
     })
   }
