@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore, ROLES_GERENTE, ROLES_VISOR, ROLES_DASHBOARD, ROLES_CAJA } from '../stores/auth.store'
+import { useAuthStore, ROLES_VISOR, ROLES_DASHBOARD, ROLES_CAJA } from '../stores/auth.store'
 import ManagerLayout from '../layouts/ManagerLayout.vue'
 import DashboardView from '../views/DashboardView.vue'
 

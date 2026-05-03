@@ -135,10 +135,6 @@
           <span>Supervisor (solo dashboard)</span>
           <span class="font-mono text-indigo-400">supervisor@comerciales.cl / super123</span>
         </div>
-        <div class="flex justify-between">
-          <span>Dev (acceso total)</span>
-          <span class="font-mono text-indigo-400">dev@comerciales.cl / devmaster2024</span>
-        </div>
       </div>
 
       <!-- Footer -->
