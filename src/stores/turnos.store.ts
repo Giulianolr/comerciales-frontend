@@ -30,7 +30,7 @@ export const useTurnosStore = defineStore('turnos', () => {
 
   function turnosPorEstacion(stationId: number, fecha?: string): TurnoRecord[] {
     const f = fecha ?? new Date().toISOString().split('T')[0]
-    return turnos.value.filter(t => t.stationId === stationId && t.fecha === f)
+    return turnos.value.filter(t => t.station_id === stationId && t.fecha === f)
   }
 
   function turnosHoy(): TurnoRecord[] {
@@ -46,7 +46,7 @@ export const useTurnosStore = defineStore('turnos', () => {
 
   function eliminarTurnosDeEstacion(stationId: number, fecha?: string) {
     const f = fecha ?? new Date().toISOString().split('T')[0]
-    const fresh = turnos.value.filter(t => !(t.stationId === stationId && t.fecha === f))
+    const fresh = turnos.value.filter(t => !(t.station_id === stationId && t.fecha === f))
     persistirTurnos(fresh)
     turnos.value = fresh
   }

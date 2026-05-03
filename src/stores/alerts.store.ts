@@ -135,10 +135,6 @@ export const useAlertsStore = defineStore('alerts', () => {
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
-  function isDev() {
-    return authStore.user?.role === 'dev'
-  }
-
   // Mantiene máx 10 alertas visibles (FIFO: descarta la más antigua al entrar la 11ª)
   function capPanelAlerts() {
     const visible = alerts.value
@@ -168,7 +164,7 @@ export const useAlertsStore = defineStore('alerts', () => {
   // ── Sincronización con inventario ────────────────────────────────────────────
 
   function syncProductAlert(product: Product, prevStatus: StockStatus) {
-    const newStatus = product.stockStatus
+    const newStatus = product.stock_status
 
     if (newStatus === 'ok') {
       alerts.value = alerts.value.map(a =>
@@ -177,7 +173,7 @@ export const useAlertsStore = defineStore('alerts', () => {
       return
     }
 
-    const detail = `Stock actual: ${product.currentStock} ${product.unit}`
+    const detail = `Stock actual: ${product.current_stock} ${product.unit}`
     const navigateTo = `/gerente/inventario?sku=${product.sku}`
 
     if (prevStatus === newStatus) {
@@ -187,7 +183,7 @@ export const useAlertsStore = defineStore('alerts', () => {
       if (latest) {
         alerts.value = alerts.value.map(a =>
           a.id === latest.id
-            ? { ...a, detail, currentStock: product.currentStock, minStock: product.minStock }
+            ? { ...a, detail, currentStock: product.current_stock, minStock: product.min_stock }
             : a
         )
       }
@@ -205,25 +201,23 @@ export const useAlertsStore = defineStore('alerts', () => {
       acknowledged: false,
       read: false,
       navigateTo,
-      productId: product.sku,
+      productId: product.sku ?? undefined,
       productName: product.name,
       stockStatus: newStatus,
-      currentStock: product.currentStock,
-      minStock: product.minStock
+      currentStock: product.current_stock,
+      minStock: product.min_stock
     }
     alerts.value = [...alerts.value, newAlert]
     capPanelAlerts()
-    if (!isDev()) {
-      if (soundEnabled.value) playAlertSound()
-      if (toastsEnabled.value) pushToast(newAlert)
-    }
+    if (soundEnabled.value) playAlertSound()
+    if (toastsEnabled.value) pushToast(newAlert)
   }
 
   function seedFromInventory(products: Product[]) {
     const toAdd: AppAlert[] = []
 
     for (const product of products) {
-      if (product.stockStatus === 'ok') continue
+      if (product.stock_status === 'ok') continue
 
       const existing = [...alerts.value]
         .filter(a => a.productId === product.sku)
@@ -236,13 +230,13 @@ export const useAlertsStore = defineStore('alerts', () => {
                 ...a,
                 subtitle: product.name,
                 productName: product.name,
-                detail: `Stock actual: ${product.currentStock} ${product.unit}`,
-                currentStock: product.currentStock,
-                minStock: product.minStock,
+                detail: `Stock actual: ${product.current_stock} ${product.unit}`,
+                currentStock: product.current_stock,
+                minStock: product.min_stock,
                 navigateTo: `/gerente/inventario?sku=${product.sku}`,
-                stockStatus: product.stockStatus,
-                severity: severityForStatus(product.stockStatus),
-                title: titleForStatus(product.stockStatus),
+                stockStatus: product.stock_status,
+                severity: severityForStatus(product.stock_status),
+                title: titleForStatus(product.stock_status),
               }
             : a
         )
@@ -250,19 +244,19 @@ export const useAlertsStore = defineStore('alerts', () => {
         toAdd.push({
           id: `stock-${product.sku}-${Date.now()}-${toAdd.length}`,
           category: 'stock',
-          severity: severityForStatus(product.stockStatus),
-          title: titleForStatus(product.stockStatus),
+          severity: severityForStatus(product.stock_status),
+          title: titleForStatus(product.stock_status),
           subtitle: product.name,
-          detail: `Stock actual: ${product.currentStock} ${product.unit}`,
+          detail: `Stock actual: ${product.current_stock} ${product.unit}`,
           triggeredAt: new Date().toISOString(),
           acknowledged: false,
           read: false,
           navigateTo: `/gerente/inventario?sku=${product.sku}`,
-          productId: product.sku,
+          productId: product.sku ?? undefined,
           productName: product.name,
-          stockStatus: product.stockStatus,
-          currentStock: product.currentStock,
-          minStock: product.minStock
+          stockStatus: product.stock_status,
+          currentStock: product.current_stock,
+          minStock: product.min_stock
         })
       }
     }
@@ -281,10 +275,8 @@ export const useAlertsStore = defineStore('alerts', () => {
     const newAlert: AppAlert = { ...alert, id, acknowledged: false, read: false }
     alerts.value = [...alerts.value, newAlert]
     capPanelAlerts()
-    if (!isDev()) {
-      if (soundEnabled.value) playAlertSound()
-      if (toastsEnabled.value) pushToast(newAlert)
-    }
+    if (soundEnabled.value) playAlertSound()
+    if (toastsEnabled.value) pushToast(newAlert)
   }
 
   // Marcar como leída: baja del badge pero se queda en el panel

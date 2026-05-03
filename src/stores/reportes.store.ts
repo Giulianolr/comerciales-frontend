@@ -24,22 +24,21 @@ export const useReportesStore = defineStore('reportes', () => {
   function registrarEventoCaja(evento: Omit<EventoCaja, 'id'>) {
     const nuevoEvento: EventoCaja = {
       id:            `evt-${Date.now()}`,
-      balanzaId:     evento.balanzaId,
-      balanzaNombre: evento.balanzaNombre,
-      numeroBoleta:  evento.numeroBoleta,
+      station_id:    evento.station_id,
+      station_name:  evento.station_name,
+      numero_boleta: evento.numero_boleta,
       total:         evento.total,
-      itemCount:     evento.itemCount,
+      item_count:    evento.item_count,
       fecha:         evento.fecha,
       items:         (evento.items ?? []).map(i => ({
-        id:        i.id,
-        name:      i.name,
-        qty:       i.qty,
-        unit:      i.unit,
-        priceUnit: i.priceUnit,
-        supplier:  i.supplier,
+        id:         i.id,
+        name:       i.name,
+        qty:        i.qty,
+        unit:       i.unit,
+        price_unit: i.price_unit,
+        supplier:   i.supplier,
       })),
     }
-    // Siempre leer desde localStorage para evitar estado desincronizado entre vistas
     const actual = cargarEventos()
     const nuevos = [nuevoEvento, ...actual]
     eventosCaja.value = nuevos
@@ -64,7 +63,6 @@ export const useReportesStore = defineStore('reportes', () => {
   return { eventosCaja, registrarEventoCaja, eliminarEventoCaja, limpiarEventosCaja, recargarDesdeStorage }
 })
 
-// Soporte HMR para Vite — evita instancias duplicadas del store al editar código
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useReportesStore, import.meta.hot))
 }

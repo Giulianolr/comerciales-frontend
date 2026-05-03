@@ -2,39 +2,39 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { AuthUser, UserRole } from '../types'
 
-// ─── Mock users (reemplazar por llamada API cuando Allan entregue endpoint) ───
+// ─── Mock users (reemplazar por llamada API cuando se implemente /auth/login) ───
 const MOCK_USERS: Array<{ email: string; password: string; user: AuthUser; token: string }> = [
   {
     email: 'admin@comerciales.cl',
     password: 'admin123',
     token: 'mock-token-gerente-abc123',
-    user: { id: '1', email: 'admin@comerciales.cl', nombre: 'María González', role: 'gerente' }
+    user: { id: '1', email: 'admin@comerciales.cl', name: 'María González', role: 'gerente' }
   },
   {
     email: 'caja@comerciales.cl',
     password: 'caja123',
     token: 'mock-token-cajero-xyz789',
-    user: { id: '2', email: 'caja@comerciales.cl', nombre: 'Carlos Méndez', role: 'cajero' }
+    user: { id: '2', email: 'caja@comerciales.cl', name: 'Carlos Méndez', role: 'cajero' }
   },
   {
     email: 'supervisor@comerciales.cl',
     password: 'super123',
     token: 'mock-token-supervisor-def456',
-    user: { id: '3', email: 'supervisor@comerciales.cl', nombre: 'Ana Torres', role: 'supervisor' }
+    user: { id: '3', email: 'supervisor@comerciales.cl', name: 'Ana Torres', role: 'supervisor' }
   },
   {
-    email: 'dev@comerciales.cl',
-    password: 'devmaster2024',
-    token: 'mock-token-dev-ghi000',
-    user: { id: '0', email: 'dev@comerciales.cl', nombre: 'Dev Admin', role: 'dev' }
+    email: 'operador@comerciales.cl',
+    password: 'oper123',
+    token: 'mock-token-operador-ghi000',
+    user: { id: '4', email: 'operador@comerciales.cl', name: 'Juan Operador', role: 'operador' }
   }
 ]
 
 // ─── Roles que pueden acceder a cada sección ──────────────────────────────────
-export const ROLES_GERENTE: UserRole[] = ['gerente', 'dev']               // acceso completo al panel (edición)
-export const ROLES_VISOR: UserRole[] = ['gerente', 'supervisor', 'dev']   // todas las vistas (solo lectura para supervisor)
-export const ROLES_DASHBOARD: UserRole[] = ['gerente', 'supervisor', 'dev'] // dashboard + layout gerente
-export const ROLES_CAJA: UserRole[] = ['cajero', 'operador', 'dev']
+export const ROLES_GERENTE: UserRole[] = ['gerente']                              // acceso completo al panel (edición)
+export const ROLES_VISOR: UserRole[] = ['gerente', 'supervisor']                  // todas las vistas (solo lectura para supervisor)
+export const ROLES_DASHBOARD: UserRole[] = ['gerente', 'supervisor']              // dashboard + layout gerente
+export const ROLES_CAJA: UserRole[] = ['cajero', 'operador']
 
 export const useAuthStore = defineStore(
   'auth',
@@ -50,7 +50,6 @@ export const useAuthStore = defineStore(
 
     const redirectPathForRole = computed((): string => {
       if (!user.value) return '/login'
-      if (user.value.role === 'dev') return '/gerente'
       if (ROLES_DASHBOARD.includes(user.value.role)) return '/gerente'
       if (ROLES_CAJA.includes(user.value.role)) return '/caja'
       return '/login'

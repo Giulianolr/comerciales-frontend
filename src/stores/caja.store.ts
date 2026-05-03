@@ -7,32 +7,30 @@ import { useDashboardStore } from './dashboard.store'
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 const MOCK_ITEMS_TAB1: ItemVenta[] = [
-  { id: 1, name: 'Jamón campo mitad',        qty: 0.500, unit: 'kg', priceUnit: 10101, supplier: 'Omeñaca S.A.' },
-  { id: 2, name: 'Queso cabeza pieza',        qty: 0.320, unit: 'kg', priceUnit: 5450,  supplier: 'Omeñaca S.A.' },
-  { id: 3, name: 'Arrollado huaso grande',    qty: 0.900, unit: 'kg', priceUnit: 7180,  supplier: 'Omeñaca S.A.' },
-  { id: 4, name: 'Pan Hamburguesa Sésamo 8p', qty: 2,     unit: 'UN', priceUnit: 1748,  supplier: 'Ideal S.A.'   },
+  { id: 1, name: 'Jamón campo mitad',        qty: 0.500, unit: 'kg', price_unit: 10101, supplier: 'Omeñaca S.A.' },
+  { id: 2, name: 'Queso cabeza pieza',        qty: 0.320, unit: 'kg', price_unit: 5450,  supplier: 'Omeñaca S.A.' },
+  { id: 3, name: 'Arrollado huaso grande',    qty: 0.900, unit: 'kg', price_unit: 7180,  supplier: 'Omeñaca S.A.' },
+  { id: 4, name: 'Pan Hamburguesa Sésamo 8p', qty: 2,     unit: 'UN', price_unit: 1748,  supplier: 'Ideal S.A.'   },
 ]
 
 const MOCK_ITEMS_MERGE: ItemVenta[] = [
-  { id: 5, name: 'Salame cocido pieza', qty: 0.450, unit: 'kg', priceUnit: 8146, supplier: 'Omeñaca S.A.' },
+  { id: 5, name: 'Salame cocido pieza', qty: 0.450, unit: 'kg', price_unit: 8146, supplier: 'Omeñaca S.A.' },
 ]
 
 const MOCK_PREBOLETA_TAB1: PreBoleta = {
   id: '9a3f-b821',
-  numero: 1,
-  balanzaId: 1,
-  balanzaNombre: 'B1',
+  station_id: 1,
+  station_name: 'B1',
   items: [...MOCK_ITEMS_TAB1],
-  creadaHace: 'hace 1 min',
+  created_ago: 'hace 1 min',
 }
 
 const MOCK_PREBOLETA_SCAN: PreBoleta = {
   id: 'c7d2-e094',
-  numero: 2,
-  balanzaId: 3,
-  balanzaNombre: 'B3',
+  station_id: 3,
+  station_name: 'B3',
   items: [...MOCK_ITEMS_MERGE],
-  creadaHace: 'hace 8 min',
+  created_ago: 'hace 8 min',
 }
 
 export const MOCK_COLA_BALANZAS: BalanzaEnCola[] = [
@@ -65,13 +63,10 @@ export const useCajaStore = defineStore('caja', () => {
   const showModalScan   = ref<boolean>(false)
   const showModalEdit   = ref<boolean>(false)
   const editingItemId   = ref<number | null>(null)
-  const preboletaEscan  = ref<PreBoleta | null>(null)  // pre-boleta del 2° QR
+  const preboletaEscan  = ref<PreBoleta | null>(null)
 
   // Offline
   const offline = ref<boolean>(false)
-
-  // Contador global de pre-boletas (nunca retrocede)
-  const nextPreboletaNum = ref<number>(3)
 
   // Idle — items en curso por balanza (antes de confirmar cobro)
   const itemsPorBalanza = ref<Record<number, ItemVenta[]>>({
@@ -92,7 +87,7 @@ export const useCajaStore = defineStore('caja', () => {
   const items = computed(() => tabActivo.value?.preBoleta.items ?? [])
 
   const total = computed(() =>
-    items.value.reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
+    items.value.reduce((s, i) => s + Math.round(i.qty * i.price_unit), 0)
   )
 
   const neto = computed(() => Math.round(total.value / 1.19))
@@ -114,7 +109,7 @@ export const useCajaStore = defineStore('caja', () => {
   const totalMergePreview = computed(() => {
     if (!preboletaEscan.value) return 0
     const extraTotal = preboletaEscan.value.items.reduce(
-      (s, i) => s + Math.round(i.qty * i.priceUnit), 0
+      (s, i) => s + Math.round(i.qty * i.price_unit), 0
     )
     return total.value + extraTotal
   })
@@ -128,7 +123,6 @@ export const useCajaStore = defineStore('caja', () => {
     items.value.find(i => i.id === editingItemId.value) ?? null
   )
 
-  // Tabs que NO son el tab activo (candidatos a unir)
   const otrosTabs = computed(() =>
     tabs.value.filter(t => t.tabId !== tabActivoId.value)
   )
@@ -145,18 +139,16 @@ export const useCajaStore = defineStore('caja', () => {
   }
 
   function confirmarVenta() {
-    // Capturar datos antes de cerrar el tab (computed se pierde al cerrar)
     const totalVenta = total.value
-    const balanzaId  = tabActivo.value?.preBoleta.balanzaId
+    const stationId  = tabActivo.value?.preBoleta.station_id
     const tabId      = tabActivo.value?.tabId
     if (tabId !== undefined) {
       cerrarTab(tabId)
       if (tabs.value.length > 0) irA('active')
     }
-    // Registrar venta en la balanza que originó la pre-boleta y en la Caja
     const dashStore = useDashboardStore()
-    if (balanzaId !== undefined) {
-      dashStore.registrarTransaccion(balanzaId, totalVenta)
+    if (stationId !== undefined) {
+      dashStore.registrarTransaccion(stationId, totalVenta)
     }
     const cajaStation = dashStore.stations.find(s => s.type === 'caja')
     if (cajaStation) {
@@ -165,7 +157,6 @@ export const useCajaStore = defineStore('caja', () => {
   }
 
   function nuevaVenta() {
-    // Resetear tab activo a estado inicial
     if (tabActivo.value) {
       tabActivo.value.preBoleta.items = [...MOCK_ITEMS_TAB1]
       tabActivo.value.mergedWith = []
@@ -200,14 +191,14 @@ export const useCajaStore = defineStore('caja', () => {
     try {
       const tab = tabs.value.find(t => t.tabId === tabId)
       if (tab && tab.preBoleta.items.length > 0) {
-        const tabTotal = tab.preBoleta.items.reduce((s, i) => s + Math.round(i.qty * i.priceUnit), 0)
+        const tabTotal = tab.preBoleta.items.reduce((s, i) => s + Math.round(i.qty * i.price_unit), 0)
         useReportesStore().registrarEventoCaja({
-          balanzaId:     tab.preBoleta.balanzaId,
-          balanzaNombre: tab.preBoleta.balanzaNombre,
-          numeroBoleta:  tab.preBoleta.numero ?? 0,
+          station_id:    tab.preBoleta.station_id,
+          station_name:  tab.preBoleta.station_name,
+          numero_boleta: tab.tabId,
           total:         tabTotal,
-          itemCount:     tab.preBoleta.items.length,
-          items:         tab.preBoleta.items.map(i => ({ id: i.id, name: i.name, qty: i.qty, unit: i.unit, priceUnit: i.priceUnit, supplier: i.supplier })),
+          item_count:    tab.preBoleta.items.length,
+          items:         tab.preBoleta.items.map(i => ({ id: i.id, name: i.name, qty: i.qty, unit: i.unit, price_unit: i.price_unit, supplier: i.supplier })),
           fecha:         new Date().toISOString(),
         })
       }
@@ -217,7 +208,6 @@ export const useCajaStore = defineStore('caja', () => {
 
   // ── Acciones — Escaneo 2° QR ──────────────────────────────────────────────
 
-  // tabId: el tab que se quiere unir al tab activo
   function abrirModalScan(tabId: number) {
     const tab = tabs.value.find(t => t.tabId === tabId)
     if (!tab) return
@@ -232,7 +222,6 @@ export const useCajaStore = defineStore('caja', () => {
   function confirmarMerge() {
     if (!preboletaEscan.value || !tabActivo.value) return
 
-    // Agregar ítems de la pre-boleta escaneada a la activa
     const idsExistentes = new Set(tabActivo.value.preBoleta.items.map(i => i.id))
     preboletaEscan.value.items.forEach(item => {
       if (!idsExistentes.has(item.id)) {
@@ -240,10 +229,7 @@ export const useCajaStore = defineStore('caja', () => {
       }
     })
 
-    // Registrar merge
     tabActivo.value.mergedWith.push(preboletaEscan.value.id)
-
-    // Remover el tab de la pre-boleta absorbida
     tabs.value = tabs.value.filter(t => t.preBoleta.id !== preboletaEscan.value!.id)
 
     showModalScan.value  = false
@@ -253,7 +239,6 @@ export const useCajaStore = defineStore('caja', () => {
   function abrirEnNuevaTab() {
     if (!preboletaEscan.value) return
 
-    // Verificar si ya existe tab para esta pre-boleta
     const yaExiste = tabs.value.find(t => t.preBoleta.id === preboletaEscan.value!.id)
     if (!yaExiste) {
       const newTab: TabVenta = {
@@ -364,28 +349,25 @@ export const useCajaStore = defineStore('caja', () => {
       tabId: nextTabId.value++,
       preBoleta: {
         id: `${balanzaId}-${Date.now()}`,
-        numero: nextPreboletaNum.value++,
-        balanzaId: balanza.id,
-        balanzaNombre: balanza.nombre,
+        station_id: balanza.id,
+        station_name: balanza.nombre,
         items: [...(itemsPorBalanza.value[balanzaId] ?? [])],
-        creadaHace: 'ahora',
+        created_ago: 'ahora',
       },
       mergedWith: [],
     }
     tabs.value.push(nueva)
-    // Limpiar items de la balanza y dejarla libre para el próximo cliente
     itemsPorBalanza.value[balanzaId] = []
     setTabActivo(nueva.tabId)
   }
 
-  // Mantener para merge flow
   function seleccionarPreBoleta(balanzaId: number) {
     seleccionarBalanzaIdle(balanzaId)
   }
 
   return {
     // State
-    estado, tabs, tabActivoId, nextTabId, nextItemId, nextPreboletaNum, metodoPago, montoRecibido,
+    estado, tabs, tabActivoId, nextTabId, nextItemId, metodoPago, montoRecibido,
     showModalScan, showModalEdit, editingItemId, preboletaEscan, offline,
     itemsPorBalanza, balanzaSeleccionadaId,
     pagoMixto, montoMixtoTarjeta, metodoPagoSecundario,
@@ -406,7 +388,7 @@ export const useCajaStore = defineStore('caja', () => {
   persist: {
     key: 'comerciales-caja',
     paths: [
-      'tabs', 'tabActivoId', 'nextTabId', 'nextItemId', 'nextPreboletaNum',
+      'tabs', 'tabActivoId', 'nextTabId', 'nextItemId',
       'estado', 'metodoPago', 'montoRecibido',
       'itemsPorBalanza', 'balanzaSeleccionadaId',
       'pagoMixto', 'montoMixtoTarjeta', 'metodoPagoSecundario',
@@ -425,15 +407,6 @@ export const useCajaStore = defineStore('caja', () => {
       ctx.store.montoMixtoTarjeta    = 0
       ctx.store.metodoPagoSecundario = null
       ctx.store.balanzaSeleccionadaId = null
-      // Migración: pre-boletas viejas sin número reciben uno correlativo
-      let maxNum = ctx.store.nextPreboletaNum ?? 1
-      ctx.store.tabs.forEach((tab: TabVenta, idx: number) => {
-        if (tab.preBoleta.numero === undefined || tab.preBoleta.numero === null) {
-          tab.preBoleta.numero = maxNum + idx
-        }
-        if (tab.preBoleta.numero >= maxNum) maxNum = tab.preBoleta.numero + 1
-      })
-      ctx.store.nextPreboletaNum = maxNum
     },
   },
 })
